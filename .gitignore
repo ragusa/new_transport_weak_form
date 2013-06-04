@@ -11,3 +11,11 @@
 *.lai
 *.la
 *.a
+
+# Garbage file inherated from even-parity code
+J_vector*
+dPhi_ext*
+out_test*
+
+# Backup file
+*.bak

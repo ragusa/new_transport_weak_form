@@ -1,0 +1,190 @@
+Sender: LSF System <lavaadmin@compute-09>
+Subject: Job 148204: <go_SA_Sn_scalar_2D_DSA_case1_MG> Exited
+
+Job <go_SA_Sn_scalar_2D_DSA_case1_MG> was submitted from host <grove> by user <yunhuang>.
+Job was executed on host(s) <compute-09>, in queue <long>, as user <yunhuang>.
+</home/yunhuang> was used as the home directory.
+</home/yunhuang/spn/PECOS_Mesh/Cubic_Test/self_adjoint/const_source_sigma> was used as the working directory.
+Started at Thu May 30 11:55:47 2013
+Results reported at Thu May 30 11:56:12 2013
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+go_SA_Sn_scalar_2D_DSA_case1_MG
+------------------------------------------------------------
+
+Exited with exit code 134.
+
+Resource usage summary:
+
+    CPU time   :      0.28 sec.
+
+The output (if any) follows:
+
+n_assemblies[0] = 1
+n_assemblies[1] = 1
+n_assemblies[2] = 1
+core arrangement size = 3
+terminate called after throwing an instance of 'dealii::StandardExceptions::ExcMessage'
+  what():  --------------------------------------------------------
+An error occurred in line <1080> of file <go_SA_Sn_scalar_2D_DSA_case1_MG.cc> in function
+    void SN<dim>::Parameters::get_parameters(dealii::ParameterHandler&) [with int dim = 3]
+The violated condition was: 
+    core_arrangement.size() == (dim == 2 ? n_assemblies[0] * n_assemblies[1] : n_assemblies[0] * n_assemblies[1] * n_assemblies[2])
+The name and call sequence of the exception was:
+    ExcMessage ("Number of core descriptors incorrect")
+Additional Information: 
+Number of core descriptors incorrect
+--------------------------------------------------------
+
+/home/yunhuang/.lsbatch/1369932250.148204: line 8: 19025 Aborted                 (core dumped) go_SA_Sn_scalar_2D_DSA_case1_MG
+Sender: LSF System <lavaadmin@compute-04>
+Subject: Job 148211: <go_SA_Sn_scalar_2D_DSA_case1_MG> Done
+
+Job <go_SA_Sn_scalar_2D_DSA_case1_MG> was submitted from host <grove> by user <yunhuang>.
+Job was executed on host(s) <compute-04>, in queue <long>, as user <yunhuang>.
+</home/yunhuang> was used as the home directory.
+</home/yunhuang/spn/PECOS_Mesh/Cubic_Test/self_adjoint/const_source_sigma> was used as the working directory.
+Started at Thu May 30 14:07:16 2013
+Results reported at Mon Jun  3 18:28:25 2013
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+go_SA_Sn_scalar_2D_DSA_case1_MG
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time   : 363578.00 sec.
+    Max Memory :      4099 MB
+    Max Swap   :      4446 MB
+
+    Max Processes  :         3
+
+The output (if any) follows:
+
+n_assemblies[0] = 1
+n_assemblies[1] = 1
+n_assemblies[2] = 1
+core arrangement size = 1
+Level(1):
+0.359475 0.359475 0.861136
+wt = 0.546409
+-0.359475 0.359475 0.861136
+wt = 0.546409
+-0.359475 -0.359475 0.861136
+wt = 0.546409
+0.359475 -0.359475 0.861136
+wt = 0.546409
+Level(2):
+0.868846 0.359888 0.339981
+wt = 0.512194
+0.359888 0.868846 0.339981
+wt = 0.512194
+-0.359888 0.868846 0.339981
+wt = 0.512194
+-0.868846 0.359888 0.339981
+wt = 0.512194
+-0.868846 -0.359888 0.339981
+wt = 0.512194
+-0.359888 -0.868846 0.339981
+wt = 0.512194
+0.359888 -0.868846 0.339981
+wt = 0.512194
+0.868846 -0.359888 0.339981
+wt = 0.512194
+Level(2):
+0.868846 0.359888 -0.339981
+wt = 0.512194
+0.359888 0.868846 -0.339981
+wt = 0.512194
+-0.359888 0.868846 -0.339981
+wt = 0.512194
+-0.868846 0.359888 -0.339981
+wt = 0.512194
+-0.868846 -0.359888 -0.339981
+wt = 0.512194
+-0.359888 -0.868846 -0.339981
+wt = 0.512194
+0.359888 -0.868846 -0.339981
+wt = 0.512194
+0.868846 -0.359888 -0.339981
+wt = 0.512194
+Level(1):
+0.359475 0.359475 -0.861136
+wt = 0.546409
+-0.359475 0.359475 -0.861136
+wt = 0.546409
+-0.359475 -0.359475 -0.861136
+wt = 0.546409
+0.359475 -0.359475 -0.861136
+wt = 0.546409
+Cycle = 0
+Begin Source Iteration, j = 0
+ Solving for Group #0
+We begin to solve the I+ equation : moment : 0
+The number of dofs is :1030301
+We begin to solve the I+ equation : moment : 1
+The number of dofs is :1030301
+We begin to solve the I+ equation : moment : 2
+The number of dofs is :1030301
+We begin to solve the I+ equation : moment : 3
+The number of dofs is :1030301
+We begin to solve the I+ equation : moment : 4
+The number of dofs is :1030301
+We begin to solve the I+ equation : moment : 5
+The number of dofs is :1030301
+We begin to solve the I+ equation : moment : 6
+The number of dofs is :1030301
+We begin to solve the I+ equation : moment : 7
+The number of dofs is :1030301
+We begin to solve the I+ equation : moment : 8
+The number of dofs is :1030301
+We begin to solve the I+ equation : moment : 9
+The number of dofs is :1030301
+We begin to solve the I+ equation : moment : 10
+The number of dofs is :1030301
+We begin to solve the I+ equation : moment : 11
+The number of dofs is :1030301
+We begin to solve the I+ equation : moment : 12
+The number of dofs is :1030301
+We begin to solve the I+ equation : moment : 13
+The number of dofs is :1030301
+We begin to solve the I+ equation : moment : 14
+The number of dofs is :1030301
+We begin to solve the I+ equation : moment : 15
+The number of dofs is :1030301
+We begin to solve the I+ equation : moment : 16
+The number of dofs is :1030301
+We begin to solve the I+ equation : moment : 17
+The number of dofs is :1030301
+We begin to solve the I+ equation : moment : 18
+The number of dofs is :1030301
+We begin to solve the I+ equation : moment : 19
+The number of dofs is :1030301
+We begin to solve the I+ equation : moment : 20
+The number of dofs is :1030301
+We begin to solve the I+ equation : moment : 21
+The number of dofs is :1030301
+We begin to solve the I+ equation : moment : 22
+The number of dofs is :1030301
+We begin to solve the I+ equation : moment : 23
+The number of dofs is :1030301
+conv(0) = inf
+Leakage of Interest: 1.12735017711
+Source  of Interest: 6.57126881767
+Half-Range-Current : 1.12735017711
+sink = 39.3508779183
+source = 39.3167607035
+Partical Conservation : -0.000867752435254
+time = 320965.15088
+
+time elapsed = 323054.842199
+
+DSA desctruted
