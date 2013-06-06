@@ -1910,7 +1910,7 @@ void SN<dim>::assemble_system (unsigned int group, unsigned int m)
 //            fe_values.JxW(q_point);
      
      //piece-wise constant \sigma_t
-     cell_matrix(i,j) += -(
+     cell_matrix(i,j) += (
          st*Omega[m]* 
          ( fe_values.shape_grad (i,q_point) * fe_values.shape_value (j,q_point) +
            fe_values.shape_value (i,q_point) * fe_values.shape_grad (j,q_point)  ) *
@@ -1972,11 +1972,11 @@ void SN<dim>::assemble_system (unsigned int group, unsigned int m)
         
         //piece-wise constant \sigma_t     
         for (unsigned int j=0; j<dofs_per_cell; j++)
-               cell_matrix(i,j) +=  ( st*
+               cell_matrix(i,j) +=  -( st*
                fe_face_values.shape_value(i,q_point) * fe_face_values.shape_value(j,q_point) *
                Omega[m]*fe_face_values.normal_vector(q_point) *
                fe_face_values.JxW(q_point));
-       
+        
           
 //       if(Omega[m]* fe_face_values.normal_vector(q_point) < 0)    
 //       for (unsigned int j=0; j<dofs_per_cell; j++)
