@@ -1,0 +1,95 @@
+# 2d pin-by-pin spn calculation
+# ---------------------
+# Problem dimension
+set Dimension                 = 3
+
+# true if we want to make a goal oriented calculation, false if we want to make a simple adaptative mesh
+set Goal oriented = false
+
+set Number of interesting points = 1
+
+set Point = 19.1,19.1,19.1
+
+# true if we want the current in 1 point and false if we want the flux in 1 point
+set Current = false
+
+# if true we make a vtk for all the solutions that we made otherwise we don't make a vtk when the number of dofs is bigger than 1 million
+set All output = true
+
+set Refinement cycles	 = 0
+
+set Refinement level difference limit = 10
+
+# Polynomial degree of the finite element to be used
+set Finite element degree     = 1
+
+# CG iterations are stopped when the change of the solution falls below this
+# tolerance
+set Convergence tolerance   = 1e-6
+
+# Number of CG to be performed
+set Maximum number of CG iterations   = 10000
+
+# Source Iteration tolerance
+set Convergence tolerance for the moments = 1e-6
+
+# Names of input files
+set Material data file  = materials_mg
+set Have assembly file  = false
+
+# Names of output files
+set SPn data output file  = SPn_angular_flux
+set Have assembly file  = false
+ 
+# Number of assemblies in each of the coordinate directions
+
+#set Number of assemblies= 2,1
+#set Number of assemblies = 3,3
+#set Number of assemblies = 4,4
+set Number of assemblies = 1,1,1
+
+
+
+#set X grid = 10,1, 10,1, 10,1
+#set Y grid = 10,1, 10,1, 10,1
+
+
+
+#set X grid = 2,2,5,5,2,2,11,11		
+#set Y grid = 9,9,2,2,7,7,2,2
+set X grid = 2,5 		
+set Y grid = 2,5
+set Z assembly description = 2,5
+
+#set Z assembly description = 9,9,2,2,9,9 			#3 materiaux et 1 "mur de protection" au milieu
+#set X grid = 30,1,30,1
+#set Y grid = 60,2
+
+
+# Boundary conditions for each of the 2*dim faces for the direct problem 0 for reflexion, 1 Dirichlet, 2 for an incoming current
+set Boundary conditions = 2,2,2,2,2,2
+#set Boundary conditions = 1,1,1,1,1,1
+#set Boundary conditions = 2,2,0,0
+
+# we give the value of the incoming current for the direct problem
+# set Boundary values = 0.079577,0.079577,0.079577,0.079577  #Sn boundary condition corresponding to J_inc = 1 [1/(4*PI) = 0.079577]
+set Boundary values = 0,0,0,0,0,0
+# set Boundary values = 0,0,0,0
+# set Boundary values = 0,0
+#set Boundary values =
+
+# we have a the same kind of input but for the adjoint problem
+set Adjoint boundary conditions = 2,2,2,2,2,2
+set Adjoint boundary values = 0,0,0,0,1,0
+
+
+#set Core arrangement =	1,1
+#set Core arrangement = 3,3,3, 2,2,3, 1,2,3  
+#set Core arrangement = 2,2,2,2,2,2,3,2,1,2,3,2,2,2,2,2
+#set Core arrangement = 2,2,2,2,2,2,3,2,1,2,3,2,2,2,2,2,2,2,2,2,2,2,3,2,1,2,3,2,2,2,2,2,2,2,2,2,2,2,3,2,1,2,3,2,2,2,2,2 #avec le mur au milieu
+#set Core arrangement = 2,1,2, 1,2,1, 2,1,2
+set Core arrangement = 1
+# fraction of the cells that we will refine
+set Refinement fraction = 0.15
+# fraction of the cells that we will coarse
+set Coarsening fraction = 0.10

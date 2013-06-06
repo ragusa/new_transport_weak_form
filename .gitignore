@@ -12,10 +12,13 @@
 *.la
 *.a
 
-# Garbage file inherated from even-parity code
+# Garbage files inherated from even-parity code
 J_vector*
 dPhi_ext*
 out_test*
 
-# Backup file
+# Backup files
 *.bak
+
+# Solution files
+*.vtk
