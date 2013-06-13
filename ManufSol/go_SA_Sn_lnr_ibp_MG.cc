@@ -135,6 +135,14 @@ MaterialData<dim>::MaterialData(const std::string&    filename,
   unsigned int   n_q_points    = quadrature_formula.size(); 
   FEValues<dim> fe_values (fe, quadrature_formula, 
         update_values | update_q_points | update_JxW_values); 
+        
+  //Auxiliary quadrature to get coordinates of DOFS
+  Quadrature<dim> dummy_quadrature (fe.get_unit_support_points());  //dummy quadrature points to contain actually the support point on unit cell
+	FEValues<dim>   fe_values_dummy (fe, dummy_quadrature, update_quadrature_points);  //auxiliary FEValues object to map the support point from unit cell to real cell
+	
+	const unsigned int   dofs_per_cell = fe.dofs_per_cell; 
+	std::vector<unsigned int> local_dof_indices (dofs_per_cell);
+        
 	
 	//resize XS containers
   total_XS.resize(n_groups);
@@ -172,9 +180,9 @@ MaterialData<dim>::MaterialData(const std::string&    filename,
 	
 	for(unsigned int i_dof = 0; i_dof < dof_handler.n_dofs(); i_dof++)
 	{
-		temperature_vertex(i_dof) = nodal_data(i_dof, 0);          
-		T4_vertex(i_dof) =  pow(temperature_vertex(i_dof), 4.0);
-		k_abs_vertex(i_dof) = std::fabs(nodal_data(i_dof, 1));  //debug, change unit from 1/m to 1/cm
+		temperature_vertex(i_dof) = nodal_data(i_dof, 0);     
+		T4_vertex(i_dof) =  pow(temperature_vertex(i_dof), 4.0);    
+		k_abs_vertex(i_dof) = std::fabs(nodal_data(i_dof, 1));  //debug, change unit from 1/m to 1/cm 
 	}
 	
   
@@ -186,7 +194,25 @@ MaterialData<dim>::MaterialData(const std::string&    filename,
   for (unsigned int i_cell=0; cell!=endc; ++cell, ++i_cell) 
   {
     fe_values.reinit (cell);
-     	
+    fe_values_dummy.reinit(cell);
+    cell->get_dof_indices (local_dof_indices);
+    
+    for(unsigned int i_dof=0; i_dof<dofs_per_cell; i_dof++)
+    {
+    	Point<dim> dof_support_point = fe_values_dummy.quadrature_point(i_dof);
+    	T4_vertex(local_dof_indices[i_dof]) = 1/(4.0*M_PI)*cos(M_PI/2.0*dof_support_point(0))*
+    		                                                 cos(M_PI/2.0*dof_support_point(1))*
+    		                                                 cos(M_PI/2.0*dof_support_point(2));
+      k_abs_vertex(local_dof_indices[i_dof]) = cos(M_PI/2.0*dof_support_point(0))*
+    		                                                 cos(M_PI/2.0*dof_support_point(1))*
+    		                                                 cos(M_PI/2.0*dof_support_point(2));
+    }
+  }
+  
+  cell = dof_handler.begin_active();
+  for (unsigned int i_cell=0; cell!=endc; ++cell, ++i_cell) 
+  {
+    fe_values.reinit (cell);	
     for(unsigned int g=0; g<n_groups; g++)
     {
      	//Evaluate local temperature based on trilinear model
@@ -319,13 +345,14 @@ class RHS : public Function<dim> // this class has the information that we need 
 {
  public :
   RHS() : Function<dim>() {};
-  virtual double get_source (const Point<dim>   &p, const double T4, unsigned int group, const unsigned int  component = 0) const;
+  virtual double get_source (const Point<dim>   &p, const double sa, unsigned int group, Tensor<1,dim> Omega,
+  	                          const unsigned int  component = 0) const;
   virtual double get_Jinc (const Point<dim>   &p, double value, unsigned int group, unsigned int moment,
                            std::vector<Tensor<1,dim> > Omega, std::vector<double> wt, const unsigned int  component = 0 ) const;
 };
 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 template <int dim>
-double RHS<dim>::get_source (const Point<dim> &p, const double T4, unsigned int group, const unsigned int /*component*/) const 
+double RHS<dim>::get_source (const Point<dim> &p, const double sa, unsigned int group,  Tensor<1,dim>  Omega, const unsigned int /*component*/) const 
  { // we give the source for the direct problem
  double value = 0;
 
@@ -340,7 +367,13 @@ double RHS<dim>::get_source (const Point<dim> &p, const double T4, unsigned int 
   
 //  double phi = 1.0;
 //  if((p[0]<=0.5&&p[0]>=-0.5&&p[1]<=0.5&&p[1]>=-0.5&&p[2]<=0.5&&p[2]>=-0.5))  //debug, benchmark source
-  value = 4.0*sigma_Boltzmann*T4/(4.0*M_PI);
+//  value = 4.0*sigma_Boltzmann*T4/(4.0*M_PI);
+    value = (-Omega[0]/8.0*sin(M_PI/2.0*p[0])*cos(M_PI/2.0*p[1])*cos(M_PI/2.0*p[2])
+             -Omega[1]/8.0*cos(M_PI/2.0*p[0])*sin(M_PI/2.0*p[1])*cos(M_PI/2.0*p[2])
+        		 -Omega[2]/8.0*cos(M_PI/2.0*p[0])*cos(M_PI/2.0*p[1])*sin(M_PI/2.0*p[2]) )
+        		 /sa
+        		
+        		+1.0/(4.0*M_PI)*cos(M_PI/2.0*p[0])*cos(M_PI/2.0*p[1])*cos(M_PI/2.0*p[2]);
  
  
  
@@ -616,7 +649,9 @@ void SN_group<dim>::solve (unsigned int n_iteration_cg, double convergence_toler
 { // here we just solve the system of equation thanks to CG we use a SSOR preconditioner 
  SolverControl           solver_control (n_iteration_cg, convergence_tolerance*system_rhs.l2_norm());
  SolverCG<>              cg (solver_control);
-    
+ 
+ cout<<"L2(RHS) = "<<system_rhs.l2_norm()<<endl;
+ 
  PreconditionSSOR<> preconditioner; 
  preconditioner.initialize(system_matrix, 1.2);  
  cg.solve (system_matrix, solution_moment, system_rhs,
@@ -1661,6 +1696,10 @@ void SN<dim>::assemble_system (unsigned int group, unsigned int m)
  const unsigned int n_face_q_points = face_quadrature_formula.size();
  FEFaceValues<dim> fe_face_values (fe, face_quadrature_formula, 
         update_values | update_q_points | update_normal_vectors | update_JxW_values);
+        
+ //Auxiliary quadrature to get coordinates of DOFS
+  Quadrature<dim> dummy_quadrature (fe.get_unit_support_points());  //dummy quadrature points to contain actually the support point on unit cell
+	FEValues<dim>   fe_values_dummy (fe, dummy_quadrature, update_quadrature_points);  //auxiliary FEValues object to map the support point from unit cell to real cell
 
  const unsigned int   dofs_per_cell = fe.dofs_per_cell; 
  const unsigned int   n_q_points    = quadrature_formula.size(); 
@@ -1688,6 +1727,7 @@ void SN<dim>::assemble_system (unsigned int group, unsigned int m)
  for (unsigned int i_cell=0; cell!=endc; ++cell, ++i_cell) 
   {
   fe_values.reinit (cell);
+  fe_values_dummy.reinit (cell);
   cell->get_dof_indices (local_dof_indices);
   
   
@@ -1701,9 +1741,11 @@ void SN<dim>::assemble_system (unsigned int group, unsigned int m)
     {
     	unsigned int i_dof_g = local_dof_indices[i];
       st_t_grad[q_point] += k_abs_vertex(i_dof_g) * fe_values.shape_grad(i, q_point);
-      B_grad[q_point] += right_hand_side.get_source (fe_values.quadrature_point (q_point), T4_vertex(i_dof_g), group)
+      B_grad[q_point] += right_hand_side.get_source (fe_values_dummy.quadrature_point(i), k_abs_vertex(i_dof_g), group, Omega[m])
                          * fe_values.shape_grad(i, q_point);
     }
+//    cout<<"st_t_grad = "<<st_t_grad[q_point]<<endl;
+//    cout<<"B_grad = "<<B_grad[q_point]<<endl;
   }
   
   
@@ -1738,29 +1780,28 @@ void SN<dim>::assemble_system (unsigned int group, unsigned int m)
          st_t[q_point] *  st_t[q_point] *     
          fe_values.shape_value (i,q_point) * fe_values.shape_value (j,q_point)) *
          fe_values.JxW (q_point));
-         
-    cell_matrix(i,j) += -( Omega[m]*
-                          fe_values.shape_value (i,q_point) * fe_values.shape_value (j,q_point) *
-                          st_t_grad[q_point] *
-                          fe_values.JxW (q_point) );
+                          
+    cell_matrix(i,j) += (
+         st_t[q_point]*Omega[m]* 
+         ( fe_values.shape_grad (i,q_point) * fe_values.shape_value (j,q_point) +
+           fe_values.shape_value (i,q_point) * fe_values.shape_grad (j,q_point)  ) *
+         fe_values.JxW (q_point));
          
 //     cell_scattering_matrix(i,j) += 1.0/(4.0*M_PI)*ss0*
 //            fe_values.shape_value(i,q_point) *
 //            fe_values.shape_value(j,q_point) *
 //            fe_values.JxW(q_point);
-     }
+    }
   
     // we give the values for the right-hand-side
-    // First, the contribution to RHS due to even parity external source
-    cell_rhs(i) +=( -Omega[m] *
-                     (st_t_grad[q_point] * right_hand_side.get_source (fe_values.quadrature_point (q_point), T4[q_point], group) +
-                      st_t[q_point] * B_grad[q_point]) *
-                     fe_values.shape_value (i, q_point) +
-    
-                     st_t[q_point]*
-                     sa_t[q_point]*right_hand_side.get_source (fe_values.quadrature_point (q_point), T4[q_point], group) * 
-                     fe_values.shape_value (i, q_point) )*
-                     fe_values.JxW (q_point);
+    // First, the contribution to RHS due to external source            
+    cell_rhs(i) +=( st_t[q_point] * right_hand_side.get_source (fe_values.quadrature_point (q_point), sa_t[q_point], group, Omega[m])  *
+                    Omega[m]* fe_values.shape_grad (i, q_point) + 
+                    st_t[q_point]*
+                    st_t[q_point]*right_hand_side.get_source (fe_values.quadrature_point (q_point), sa_t[q_point], group, Omega[m])  * 
+                    fe_values.shape_value (i, q_point) )*
+                    fe_values.JxW (q_point);
+             
     // Second, the contribution to RHS due to odd parity external source      
 //    cell_rhs(i) += (
 //          diffusion_coefficient[q_point]*right_hand_side_odd.get_source (fe_values.quadrature_point (q_point), group, m) * 
@@ -1791,7 +1832,7 @@ void SN<dim>::assemble_system (unsigned int group, unsigned int m)
        if(Omega[m]* fe_face_values.normal_vector(q_point) > 0)  //if out-going direction, use first order equation for boundary condition
        { 
         cell_rhs(i) +=  ( Omega[m] * fe_face_values.normal_vector(q_point) *
-            sa_t[q_point]*right_hand_side.get_source (fe_values.quadrature_point (q_point), T4[q_point], group) *
+            sa_t[q_point]*right_hand_side.get_source (fe_values.quadrature_point (q_point), sa_t[q_point], group, Omega[m]) *
             fe_face_values.shape_value(i,q_point) *
             fe_face_values.JxW(q_point));
         
@@ -1803,6 +1844,18 @@ void SN<dim>::assemble_system (unsigned int group, unsigned int m)
               fe_face_values.shape_value(j,q_point)*
               fe_face_values.JxW(q_point));
        }
+       
+       //boundary term due to L* operating on source
+        cell_rhs(i) +=  -( Omega[m] * fe_face_values.normal_vector(q_point) *
+             sa_t[q_point]*right_hand_side.get_source (fe_values.quadrature_point (q_point), sa_t[q_point], group, Omega[m]) *
+             fe_face_values.shape_value(i,q_point) *
+             fe_face_values.JxW(q_point));
+             
+        for (unsigned int j=0; j<dofs_per_cell; j++)
+               cell_matrix(i,j) +=  -( st_t[q_point]*
+               fe_face_values.shape_value(i,q_point) * fe_face_values.shape_value(j,q_point) *
+               Omega[m]*fe_face_values.normal_vector(q_point) *
+               fe_face_values.JxW(q_point));
       }
      }
      
@@ -1846,9 +1899,6 @@ void SN<dim>::assemble_system (unsigned int group, unsigned int m)
  
   
  //Dirichlet Boundary Condition
- Quadrature<dim> dummy_quadrature (fe.get_unit_support_points());  //dummy quadrature points to contain actually the support point on unit cell
- FEValues<dim>   fe_values_dummy (fe, dummy_quadrature, update_q_points );  //auxiliary FEValues object to map the support point from unit cell to real cell
-
  FE_Q<dim-1> fe_face(1);
  Quadrature<dim-1> dummy_quadrature_face (fe_face.get_unit_support_points());  //dummy quadrature points to contain actually the support point on unit cell
  FEFaceValues<dim>   fe_face_values_dummy (fe, dummy_quadrature_face, update_values | update_q_points | update_normal_vectors );  //auxiliary FEValues object to map the support point from unit cell to real cell
@@ -1890,13 +1940,23 @@ void SN<dim>::assemble_system (unsigned int group, unsigned int m)
            	 		
         	   if(Omega[m]* fe_face_values_dummy.normal_vector(i_face_dof) < 0)
         	   {
-//        	   	 if((parameters.adjoint_boundary_conditions[cell->face(face)->boundary_indicator()] == 2) && (parameters.adjoint_boundary_value[cell->face(face)->boundary_indicator()] == 1))
-        	       sn_group[group]->system_rhs(local_dof_indices[i]) = 4.0*sigma_Boltzmann*T4_vertex(local_dof_indices[i])/(4.0*M_PI);    //Dirichlet BC value
+        	   	   double diri_value = T4_vertex(local_dof_indices[i])/(4.0*M_PI);
+        	   	 
+          	   for(unsigned j_dof=0; j_dof<sn_group[group]->dof_handler.n_dofs(); j_dof++)  //zero out rows
+        	       sn_group[group]->system_matrix.set(local_dof_indices[i],j_dof,0.0); 
+        	     for(unsigned i_dof=0; i_dof<sn_group[group]->dof_handler.n_dofs(); i_dof++)  //zero out colums
+        	       sn_group[group]->system_matrix.set(i_dof,local_dof_indices[i],0.0); 
+        	     
+        	     for(unsigned i_dof=0; i_dof<sn_group[group]->dof_handler.n_dofs(); i_dof++)  //decouple dirichlet node from interior (column-wise)
+        	       sn_group[group]->system_rhs(i_dof) -= sn_group[group]->system_matrix.el(i_dof,local_dof_indices[i])*diri_value;
+        	     
+        	     
+//        	     if((parameters.adjoint_boundary_conditions[cell->face(face)->boundary_indicator()] == 2) && (parameters.adjoint_boundary_value[cell->face(face)->boundary_indicator()] == 1))
+//        	       sn_group[group]->system_rhs(local_dof_indices[i]) = 4.0*sigma_Boltzmann*T4_vertex(local_dof_indices[i])/(4.0*M_PI);    //Dirichlet BC value
+        	       sn_group[group]->system_rhs(local_dof_indices[i]) = diri_value;  //T4_vertex represents the Manufacturered solution here!!!
 //        	     else
-//        	     	 sn_group[group]->system_rhs(local_dof_indices[i]) = 0.0/(4.0*M_PI);    //Dirichlet BC value
-        	     for(unsigned i_dof=0; i_dof<sn_group[group]->dof_handler.n_dofs(); i_dof++)
-        	       sn_group[group]->system_matrix.set(local_dof_indices[i],i_dof,0.0); 
-        	     sn_group[group]->system_matrix.set(local_dof_indices[i],local_dof_indices[i],1.0);   //set unity on diagonal element for Dirichlet nodes
+//                   sn_group[group]->system_rhs(local_dof_indices[i]) = 0.0/(4.0*M_PI);    //Dirichlet BC value
+               sn_group[group]->system_matrix.set(local_dof_indices[i],local_dof_indices[i],1.0);   //set unity on diagonal element for Dirichlet nodes
         	   }
         	   	
            }
@@ -2107,7 +2167,7 @@ void SN<dim>::check_conservation(unsigned int group)
 			
 			for(unsigned int angle = 0 ; angle < n_Omega; angle++)
       {
-		  	  source += sa_t[q_point]*right_hand_side.get_source (fe_values.quadrature_point (q_point), T4[q_point], group) *
+		  	  source += sa_t[q_point]*right_hand_side.get_source (fe_values.quadrature_point (q_point), sa_t[q_point], group, Omega[angle]) *
 		  	            (dim==2?2.0:1.0)*wt[angle]*
 								    fe_values.JxW (q_point);    //we calculate the volumetric source rate
 		  }	  
@@ -2173,6 +2233,10 @@ void SN<dim>::output (int cycle) const
     DataOut<dim> data_out;
     data_out.attach_dof_handler (sn_group[group]->dof_handler);
     data_out.add_data_vector (solution[group], "solution");
+    Vector<double> T4_vertex(material_data.get_T4_vertex());
+	  Vector<double> k_abs_vertex(material_data.get_k_abs_vertex());
+	  data_out.add_data_vector (T4_vertex, "T4");
+	  data_out.add_data_vector (k_abs_vertex, "k_absorption");
    // data_out.add_data_vector (psi_plus_recon[0], "psi_plus_0");
    // data_out.add_data_vector (psi_plus_recon[1], "psi_plus_1");
    // data_out.add_data_vector (phi_even_spn[group][0], "solution_spn_recon");

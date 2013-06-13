@@ -21,7 +21,8 @@
 #target = go_EvenSn_scalar_2D_DSA_case1
 #target = go_EvenSn_scalar_2D_DSA_case1_MG
 #target = go_SA_Sn_scalar_2D_DSA_case1_MG
-target = go_SA_Sn_lnr_ibp_MG
+#target = go_SA_Sn_lnr_ibp_MG
+target = go_SA_Sn_lnr_MG
 #target = go_SA_Sn_pwc_MG
 #target = go_EvenSn_scalar_2D_DSA_case1_MG_selfmesh
 #target = go_EvenSn_scalar_2D_DSA_case1_adjoint

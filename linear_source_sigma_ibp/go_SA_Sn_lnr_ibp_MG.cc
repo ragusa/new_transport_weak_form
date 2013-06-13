@@ -1739,10 +1739,11 @@ void SN<dim>::assemble_system (unsigned int group, unsigned int m)
          fe_values.shape_value (i,q_point) * fe_values.shape_value (j,q_point)) *
          fe_values.JxW (q_point));
          
-    cell_matrix(i,j) += -( Omega[m]*
-                          fe_values.shape_value (i,q_point) * fe_values.shape_value (j,q_point) *
-                          st_t_grad[q_point] *
-                          fe_values.JxW (q_point) );
+    cell_matrix(i,j) += (
+         st_t[q_point]*Omega[m]* 
+         ( fe_values.shape_grad (i,q_point) * fe_values.shape_value (j,q_point) +
+           fe_values.shape_value (i,q_point) * fe_values.shape_grad (j,q_point)  ) *
+         fe_values.JxW (q_point));
          
 //     cell_scattering_matrix(i,j) += 1.0/(4.0*M_PI)*ss0*
 //            fe_values.shape_value(i,q_point) *
@@ -1751,16 +1752,14 @@ void SN<dim>::assemble_system (unsigned int group, unsigned int m)
      }
   
     // we give the values for the right-hand-side
-    // First, the contribution to RHS due to even parity external source
-    cell_rhs(i) +=( -Omega[m] *
-                     (st_t_grad[q_point] * right_hand_side.get_source (fe_values.quadrature_point (q_point), T4[q_point], group) +
-                      st_t[q_point] * B_grad[q_point]) *
-                     fe_values.shape_value (i, q_point) +
-    
-                     st_t[q_point]*
-                     sa_t[q_point]*right_hand_side.get_source (fe_values.quadrature_point (q_point), T4[q_point], group) * 
-                     fe_values.shape_value (i, q_point) )*
-                     fe_values.JxW (q_point);
+    // First, the contribution to RHS due to external source
+    cell_rhs(i) +=(  sa_t[q_point]*right_hand_side.get_source (fe_values.quadrature_point (q_point), T4[q_point], group) * 
+                    Omega[m]* fe_values.shape_grad (i, q_point) + 
+                    st_t[q_point]*
+                    sa_t[q_point]*right_hand_side.get_source (fe_values.quadrature_point (q_point), T4[q_point], group) * 
+                    fe_values.shape_value (i, q_point) )*
+                    fe_values.JxW (q_point);
+                    
     // Second, the contribution to RHS due to odd parity external source      
 //    cell_rhs(i) += (
 //          diffusion_coefficient[q_point]*right_hand_side_odd.get_source (fe_values.quadrature_point (q_point), group, m) * 
@@ -1803,6 +1802,19 @@ void SN<dim>::assemble_system (unsigned int group, unsigned int m)
               fe_face_values.shape_value(j,q_point)*
               fe_face_values.JxW(q_point));
        }
+       cell_rhs(i) +=  -( Omega[m] * fe_face_values.normal_vector(q_point) *
+            sa_t[q_point]*right_hand_side.get_source (fe_values.quadrature_point (q_point), T4[q_point], group) *
+            fe_face_values.shape_value(i,q_point) *
+            fe_face_values.JxW(q_point));
+        
+ 
+        for (unsigned int j=0; j<dofs_per_cell; j++)  
+         cell_matrix(i,j) +=  -(  Omega[m] * fe_face_values.normal_vector(q_point) *
+              st_t[q_point] * 
+              fe_face_values.shape_value(i,q_point) *
+              fe_face_values.shape_value(j,q_point)*
+              fe_face_values.JxW(q_point));
+       
       }
      }
      
