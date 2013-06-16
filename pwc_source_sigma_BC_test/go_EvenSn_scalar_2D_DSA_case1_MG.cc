@@ -166,7 +166,7 @@ class BoundaryValues : public Function<dim>
 template <int dim>
 double BoundaryValues<dim>::value(const Point<dim> &p, const unsigned int /*component*/) const
 { // we use this function when we have some Dirichlet boundary condition
- double value_boundary=0*p[0];
+ double value_boundary=1.0/(4.0*M_PI);
    
  return value_boundary; //  10 * p[0] = 10 * l'abscisse du point sur la bordure
 }
@@ -197,8 +197,9 @@ double RHS<dim>::get_source (const Point<dim> &p, unsigned int group, double sig
  double xlen = 20;
   
   double phi = 1.0;
+//  if((p[0]<=4.0&&p[0]>=1.0&&p[1]<=4.0&&p[1]>=1.0))  //debug, benchmark source
   if((p[0]<=1.5&&p[0]>=0.5&&p[1]<=1.5&&p[1]>=0.5&&p[2]<=1.5&&p[2]>=0.5))  //debug, benchmark source
-  value = phi/(4.0*M_PI);
+  value = phi/(4*M_PI);
  
  
  
@@ -363,8 +364,8 @@ SN_group<dim>::SN_group(const unsigned int          group,  // this is the const
 	 n_moments = material_data.get_n_moments();
    dof_handler.distribute_dofs (fe);
    n_dofs = dof_handler.n_dofs(),
-   n_Omega = (dim==2 ? 2*(1+n_moments/2)*n_moments/2
-                     : 4*(1+n_moments/2)*n_moments/2);
+   n_Omega = (dim==2 ? 2*(1+n_moments/2)*n_moments/4
+                     : 4*(1+n_moments/2)*n_moments/4);
    solution_moment.resize(n_Omega);
    for(unsigned int m=0; m<n_Omega; m++)
      solution_moment[m].reinit(n_dofs, false); 
@@ -1135,21 +1136,16 @@ SN<dim>::SN(Parameters &prm)  // constructor of the SN object
  unsigned int n_moments = material_data.get_n_moments();
  n_groups = material_data.get_n_groups();
 	
- n_Omega = (dim==2 ? 2*(1+n_moments/2)*n_moments/2
-                   : 4*(1+n_moments/2)*n_moments/2);
+ n_Omega = (dim==2 ? 2*(1+n_moments/2)*n_moments/4
+                   : 4*(1+n_moments/2)*n_moments/4);
  sn_group.resize (n_groups);
 
   QGauss<1>  mu_quadrature(material_data.get_n_moments());  //get angular qudrature points according to the order of Sn approximation to be used.
- for (unsigned int moment=0; moment<n_moments; moment++)  
+ for (unsigned int moment=0; moment<n_moments/2; moment++)  //only half the shpere will be enough for 2D problem
  {
- 	int level;
- 	if(moment < n_moments/2)
-    level = moment + 1; //latitude level index above the equator
-  else
-  	level = n_moments/2 - (moment - n_moments/2); //latitude level index below the equator
-  	
+  int level = moment + 1; //latitude level index
   cout<<"Level("<<level<<"):"<<endl;
-  double mu = mu_quadrature.point(n_moments - (moment + 1))[0]*2.0-1.0;  //mu = cos(\theta), polar angle cosine
+  double mu = mu_quadrature.point(n_moments - level)[0]*2.0-1.0;  //mu = cos(\theta), polar angle cosine
   Tensor<1, dim> temp;  //temporary Tensor to store angular qudrature point
   if(dim == 3)
     temp[2] = mu;		// \Omega_z
@@ -1160,9 +1156,9 @@ SN<dim>::SN(Parameters &prm)  // constructor of the SN object
    temp[0] = sqrt(1.0 - mu*mu)*cos(w);  //x component of the direction
    temp[1] = sqrt(1.0 - mu*mu)*sin(w);  //y compoment of the direction
    Omega.push_back(temp);
-   wt.push_back(2.0*mu_quadrature.weight(n_moments - (moment + 1))*2.0*M_PI/(4.0*level));  //polar weights sum to 2, total weights sum to 4*pi 
-   cout<<temp[0]<<" "<<temp[1]<<" "<<temp[2]<<endl;
-   cout<<"wt = "<<2.0*mu_quadrature.weight(n_moments - (moment + 1))*2.0*M_PI/(4.0*level)<<endl;
+   wt.push_back(2.0*mu_quadrature.weight(n_moments - level)*2.0*M_PI/(4.0*level));  //polar weights sum to 2, total weights sum to 4*pi 
+   cout<<temp[0]<<" "<<temp[1]<<endl;
+   cout<<"wt = "<<2.0*mu_quadrature.weight(n_moments - level)*2.0*M_PI/(4.0*level)<<endl;
   }
  }
 
@@ -1608,242 +1604,242 @@ void SN<dim>::read_SPn_data ()
   }
 }
 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-//template <int dim>
-//void SN<dim>::reconstruct_SPn_psi_plus()   //Reconstruct even-parity Angular flux from SPn solution
-//{
-//	for(unsigned int group = 0; group<n_groups; group++)
-//  {
-//    std::vector<Tensor<1,dim> > J(sn_group[group]->n_dofs);
-//    for(unsigned int i=0; i<J.size(); i++)
-//      J[i]=0;
-//      
-//    std::vector<std::vector<double> > J_vector(sn_group[group]->n_dofs);
-//    for(unsigned int i=0; i<J_vector.size(); i++)
-//      J_vector[i].resize(2*dim, 0.0);
-//      
-//    std::ostringstream J_out_filename;
-//	  J_out_filename << "J_vector-"<< group << ".txt";
-//    std::ofstream J_out(J_out_filename.str().c_str());
-//    	
-//    std::vector<std::vector<double> > grad_vector(sn_group[group]->triangulation.n_active_cells());
-//    for(unsigned int i=0; i<grad_vector.size(); i++)
-//      grad_vector[i].resize(2*dim, 0.0);
-//      
-//    std::ostringstream grad_out_filename;
-//	  grad_out_filename << "gradient-"<< group << ".txt";
-//    std::ofstream grad_out(grad_out_filename.str().c_str());
-//   
-//   //=========  Buid J_recon 	
-//    Quadrature<dim> dummy_quadrature (fe.get_unit_support_points());
-//    FEValues<dim> fe_values (fe, dummy_quadrature, update_q_points | update_gradients  | update_JxW_values);
-//      
-//    Quadrature<dim-1> dummy_face_quadrature (1);
-//    FEFaceValues<dim> fe_face_values (fe, dummy_face_quadrature, 
-//                               update_q_points | update_normal_vectors | update_JxW_values);
-//                               
-//    Quadrature<dim> dummy_center_quadrature (1);
-//    FEValues<dim> fe_center_values (fe, dummy_center_quadrature, update_q_points | update_gradients);
-//      
-//    const unsigned int   dofs_per_cell = sn_group[group]->fe.dofs_per_cell;
-//    std::vector<unsigned int> local_dof_indices (dofs_per_cell); 
-//    Vector<double> phi_odd_spn_local(dofs_per_cell);
-//      
-//       
-//    typename DoFHandler<dim>::active_cell_iterator 
-//    cell = sn_group[group]->dof_handler.begin_active(),
-//    endc = sn_group[group]->dof_handler.end();
-//       	 
-//    for (unsigned int i_cell=0; cell!=endc; ++cell, ++i_cell) 
-//    { 
-//       std::vector<Tensor<1,dim> > phi_odd_spn_value(dofs_per_cell);
-//       for(unsigned j=0; j<dofs_per_cell; j++)
-//        phi_odd_spn_value[j].clear();
-//       cell->get_dof_indices (local_dof_indices);  //get mapping from local to global dof
-//       fe_values.reinit (cell);
-//       fe_center_values.reinit(cell);
-//       for (unsigned int j=0; j<dofs_per_cell; ++j)  //j = local dof index
+template <int dim>
+void SN<dim>::reconstruct_SPn_psi_plus()   //Reconstruct even-parity Angular flux from SPn solution
+{
+	for(unsigned int group = 0; group<n_groups; group++)
+  {
+    std::vector<Tensor<1,dim> > J(sn_group[group]->n_dofs);
+    for(unsigned int i=0; i<J.size(); i++)
+      J[i]=0;
+      
+    std::vector<std::vector<double> > J_vector(sn_group[group]->n_dofs);
+    for(unsigned int i=0; i<J_vector.size(); i++)
+      J_vector[i].resize(2*dim, 0.0);
+      
+    std::ostringstream J_out_filename;
+	  J_out_filename << "J_vector-"<< group << ".txt";
+    std::ofstream J_out(J_out_filename.str().c_str());
+    	
+    std::vector<std::vector<double> > grad_vector(sn_group[group]->triangulation.n_active_cells());
+    for(unsigned int i=0; i<grad_vector.size(); i++)
+      grad_vector[i].resize(2*dim, 0.0);
+      
+    std::ostringstream grad_out_filename;
+	  grad_out_filename << "gradient-"<< group << ".txt";
+    std::ofstream grad_out(grad_out_filename.str().c_str());
+   
+   //=========  Buid J_recon 	
+    Quadrature<dim> dummy_quadrature (fe.get_unit_support_points());
+    FEValues<dim> fe_values (fe, dummy_quadrature, update_q_points | update_gradients  | update_JxW_values);
+      
+    Quadrature<dim-1> dummy_face_quadrature (1);
+    FEFaceValues<dim> fe_face_values (fe, dummy_face_quadrature, 
+                               update_q_points | update_normal_vectors | update_JxW_values);
+                               
+    Quadrature<dim> dummy_center_quadrature (1);
+    FEValues<dim> fe_center_values (fe, dummy_center_quadrature, update_q_points | update_gradients);
+      
+    const unsigned int   dofs_per_cell = sn_group[group]->fe.dofs_per_cell;
+    std::vector<unsigned int> local_dof_indices (dofs_per_cell); 
+    Vector<double> phi_odd_spn_local(dofs_per_cell);
+      
+       
+    typename DoFHandler<dim>::active_cell_iterator 
+    cell = sn_group[group]->dof_handler.begin_active(),
+    endc = sn_group[group]->dof_handler.end();
+       	 
+    for (unsigned int i_cell=0; cell!=endc; ++cell, ++i_cell) 
+    { 
+       std::vector<Tensor<1,dim> > phi_odd_spn_value(dofs_per_cell);
+       for(unsigned j=0; j<dofs_per_cell; j++)
+        phi_odd_spn_value[j].clear();
+       cell->get_dof_indices (local_dof_indices);  //get mapping from local to global dof
+       fe_values.reinit (cell);
+       fe_center_values.reinit(cell);
+       for (unsigned int j=0; j<dofs_per_cell; ++j)  //j = local dof index
+       {
+        phi_odd_spn_local(j) = phi_odd_spn[group][1](i_cell*dofs_per_cell+j);  //extract phi_1_spn dof values on current cell
+       }
+   //    fe_values.get_function_gradients(phi_odd_spn_local, local_dof_indices, phi_odd_spn_value);
+       const unsigned int   n_sppt_points    = dummy_quadrature.size();
+       for (unsigned int j=0; j<dofs_per_cell; ++j)  //j = local dof index
+        for (unsigned int sppt_point=0; sppt_point<n_sppt_points; ++sppt_point)  //sppt_point = local dof index
+        {
+         phi_odd_spn_value[sppt_point] += phi_odd_spn_local(j)*fe_values.shape_grad(j, sppt_point);
+        }
+                           
+       // ========= Make J_x strictly positive ============= //
+//       for (unsigned int sppt_point=0; sppt_point<n_sppt_points; ++sppt_point)  //sppt_point = local dof index
 //       {
-//        phi_odd_spn_local(j) = phi_odd_spn[group][1](i_cell*dofs_per_cell+j);  //extract phi_1_spn dof values on current cell
+//       	if(phi_odd_spn_value[sppt_point][0] < 0)  //if J_x < 0
+//       		phi_odd_spn_value[sppt_point] -= 2*phi_odd_spn_value[sppt_point];  //negate sign of all component of J;
 //       }
-//   //    fe_values.get_function_gradients(phi_odd_spn_local, local_dof_indices, phi_odd_spn_value);
-//       const unsigned int   n_sppt_points    = dummy_quadrature.size();
-//       for (unsigned int j=0; j<dofs_per_cell; ++j)  //j = local dof index
-//        for (unsigned int sppt_point=0; sppt_point<n_sppt_points; ++sppt_point)  //sppt_point = local dof index
-//        {
-//         phi_odd_spn_value[sppt_point] += phi_odd_spn_local(j)*fe_values.shape_grad(j, sppt_point);
-//        }
-//                           
-//       // ========= Make J_x strictly positive ============= //
-////       for (unsigned int sppt_point=0; sppt_point<n_sppt_points; ++sppt_point)  //sppt_point = local dof index
-////       {
-////       	if(phi_odd_spn_value[sppt_point][0] < 0)  //if J_x < 0
-////       		phi_odd_spn_value[sppt_point] -= 2*phi_odd_spn_value[sppt_point];  //negate sign of all component of J;
-////       }
-//       
-//       for (unsigned int j=0; j<dofs_per_cell; ++j)  //j = local dof index
-//       {
-//        int i_dof = local_dof_indices[j];
-//        Tensor<1,dim> temp;
-//        temp = 0.0;
-//        
-//        bool on_face = false;    // DOF found on face, will use \vec{k} = \vec{n}, skip \vec{k} = J
-//        
-//        for (unsigned int face=0; face<GeometryInfo<dim>::faces_per_cell; ++face)   // we make a loop over all the face, if we have a face where we have a boundary 
-//                          // condition we go to the if
-//          if (cell->at_boundary(face))
-//         	 if(fe.has_support_on_face(j, face))
-//         	 {
-//         	   fe_face_values.reinit (cell, face);
-//         	   temp += fe_face_values.normal_vector(0);
-//         	   on_face = true;
-//         	 }
-//        
-//        if(!on_face)
-//        	 temp = phi_odd_spn_value[j];
-//        temp /=  dof_repitition[group](i_dof);
-//        J[i_dof] += temp;
-//        
-//        for(unsigned int component=0; component<dim; component++)
-//        {
-//          J_vector[i_dof][component] += fe_values.quadrature_point (j)(component)/dof_repitition[group](i_dof);
-//        }
-//        //J_vector[i_dof][2] += temp[0];
-//        //J_vector[i_dof][3] += temp[1];
-//       
-//        for(unsigned int component=0; component<dim; component++)
-//        {
-//         grad_vector[i_cell][component+dim] += fe_center_values.shape_grad (j, 0)[component] * phi_even_spn[group][0](i_dof);  //first order quadradture, only one point on the center
-//         grad_vector[i_cell][component] = fe_center_values.quadrature_point (0)[component];
-//        }
-//       }
-//     }
-//     
-//     std::vector<int> zero_current_dofs;
-//     for(unsigned int i_dof=0; i_dof<J.size(); i_dof++)
-//     {
-//       if(J[i_dof].norm() == 0)
-//       	 zero_current_dofs.push_back(i_dof);
-//     }
-//     
-//     bool pick_direction = false;   //flag indicating whether averaging will yield zero vectors
-//     while(zero_current_dofs.size()>0)  //if there exist any zero current, redo the averaging step
-//     {
-//       std::vector<int> zero_current_dofs_temp;   //temp container for zero-current-dofs
-//       for(unsigned int i=0; i<zero_current_dofs.size(); i++)
-//       {
-//         unsigned int i_dof = zero_current_dofs[i];
-//         if(J[i_dof].norm()==0)
-//         {
-//           for(unsigned int nb=0; nb<dof_neighbour_dof[group][i].size(); nb++)
-//         	 {	
-//     //    			printf("x = %f,  ",J[dof_neighbour_dof[i_dof][nb]][0]);  //debug
-//     //    			printf("y = %f,  ",J[dof_neighbour_dof[i_dof][nb]][1]);  //debug
-//         		 J[i_dof] += J[dof_neighbour_dof[group][i_dof][nb]];
-//         	 }
-//         		  
-//         	 if(J[i_dof].norm() == 0)
-//         		 zero_current_dofs_temp.push_back(i_dof);
-//         }
-//       }
-//       if(zero_current_dofs.size() == zero_current_dofs_temp.size())   //if averaging is no longer effective, switch to picking direction
-//       {
-//       	 pick_direction = true;
-//         break;
-//       } 
-//       zero_current_dofs.clear();
-//       zero_current_dofs = zero_current_dofs_temp;
-//       zero_current_dofs_temp.clear();
-//       std::cout<<"Averaging Current(J)...  # 0-J DOFs: "<<zero_current_dofs.size()<<std::endl;
-//     }
-//     
-//     if(pick_direction)
-//     {
-//     	 while(zero_current_dofs.size()>0)  //if there exist any zero current, redo the averaging step
-//       {
-//         std::vector<int> zero_current_dofs_temp;   //temp container for zero-current-dofs
-//       	 for(unsigned int i=0; i<zero_current_dofs.size(); i++)
-//         {
-//         	 unsigned int i_dof = zero_current_dofs[i];
-//           if(J[i_dof].norm()==0)
-//           {
-//         	   for(unsigned int nb=0; nb<dof_neighbour_dof[group][i].size(); nb++)
-//           	 {
-//           	 	 unsigned int neighbour = dof_neighbour_dof[group][i_dof][nb];
-//           	 	 if(J[neighbour].norm() > 0)    //pick the first no-zero neighbour as the direction
-//           	  	 	J[i_dof] = J[neighbour];
-//             }
-//           }
-//         }
-//         zero_current_dofs.clear();
-//         zero_current_dofs = zero_current_dofs_temp;
-//         zero_current_dofs_temp.clear();
-//         std::cout<<"Averaging Current(J)...  # 0-J DOFs: "<<zero_current_dofs.size()<<std::endl;
-//       }
-//     }
-//         
-//     
-//     //Renormalize J_vector;
-//     for(unsigned int i_dof=0; i_dof<J.size(); i_dof++)
-//     {
-//       if(J[i_dof].norm() != 0)
-//         J[i_dof] /= J[i_dof].norm();
-//       else
-//         printf("Zero Current Encountered!!\n");
-//     }
-//     
-//     for(unsigned int i_dof=0; i_dof<J_vector.size(); i_dof++)
-//       for(unsigned int component=0; component<dim; component++)
-//     	   J_vector[i_dof][component+dim] = J[i_dof][component];
-//      
-//    //After obtaining J, reconstruct the psi_plus_recon
-//    for(unsigned int level=1; level<=material_data.get_n_moments()/2; level++)
-//     for(unsigned int n_w=0; n_w<(dim==2?2:4)*level; n_w++)
-//     {
-//       unsigned int m = (dim==2?2:4)*(1+(level-1))*(level-1)/2+n_w;  //m is the direction index, Omega_m
-//        
-//       psi_plus_recon[group][m].reinit(sn_group[group]->dof_handler.n_dofs(),false);
-//         
-//       for(unsigned int i_dof=0; i_dof<psi_plus_recon[group][m].size(); i_dof++)
-//       {   
-//         double mu;
-//         mu = Omega[m]*J[i_dof];  // mu = Omega_m * phi_1/|phi_1|
-//         
-//         for(unsigned int n=0;n<phi_even_spn[group].size();n=n+2)
-//         {
-//           double Pnm = Legendre::Pn(n, mu);
-//           if (J[i_dof].norm()==0.0)  //detect whether J has a norm of zero
-//           {
-//           	 cout<<"norm(J) is zero!!!   mu="<<mu<<endl;
-//           	 cout<<"Pn(mu) = "<<Pnm<<endl;
-//           }
-//           psi_plus_recon[group][m](i_dof) += (2.0*n+1.0)/(4.0*M_PI)*phi_even_spn[group][n](i_dof)*Pnm;
-//           
-//         }
-//         
-//       }
-//     }
-//       
-//     for(unsigned int i=0; i<J_vector.size(); i++)
-//     {
-//       for(unsigned int component=0; component<2*dim; component++)
-//         J_out<<J_vector[i][component]<<" ";
-//       J_out<<endl;
-//     }
-//     
-//     //cout<<grad_vector[i][2]*grad_vector[i][2]+grad_vector[i][3]*grad_vector[i][3]<<" ";
-//  
-//     for(unsigned int i=0; i<grad_vector.size(); i++)
-//     {
-//       for(unsigned int component=0; component<2*dim; component++)
-//         grad_out<<grad_vector[i][component]<<" ";
-//       grad_out<<endl;
-//       //cout<<grad_vector[i][2]*grad_vector[i][2]+grad_vector[i][3]*grad_vector[i][3]<<" ";
-//     }
-//      
-//    grad_out.close();
-//    J_out.close();
-//  }
-//}
+       
+       for (unsigned int j=0; j<dofs_per_cell; ++j)  //j = local dof index
+       {
+        int i_dof = local_dof_indices[j];
+        Tensor<1,dim> temp;
+        temp = 0.0;
+        
+        bool on_face = false;    // DOF found on face, will use \vec{k} = \vec{n}, skip \vec{k} = J
+        
+        for (unsigned int face=0; face<GeometryInfo<dim>::faces_per_cell; ++face)   // we make a loop over all the face, if we have a face where we have a boundary 
+                          // condition we go to the if
+          if (cell->at_boundary(face))
+         	 if(fe.has_support_on_face(j, face))
+         	 {
+         	   fe_face_values.reinit (cell, face);
+         	   temp += fe_face_values.normal_vector(0);
+         	   on_face = true;
+         	 }
+        
+        if(!on_face)
+        	 temp = phi_odd_spn_value[j];
+        temp /=  dof_repitition[group](i_dof);
+        J[i_dof] += temp;
+        
+        for(unsigned int component=0; component<dim; component++)
+        {
+          J_vector[i_dof][component] += fe_values.quadrature_point (j)(component)/dof_repitition[group](i_dof);
+        }
+        //J_vector[i_dof][2] += temp[0];
+        //J_vector[i_dof][3] += temp[1];
+       
+        for(unsigned int component=0; component<dim; component++)
+        {
+         grad_vector[i_cell][component+dim] += fe_center_values.shape_grad (j, 0)[component] * phi_even_spn[group][0](i_dof);  //first order quadradture, only one point on the center
+         grad_vector[i_cell][component] = fe_center_values.quadrature_point (0)[component];
+        }
+       }
+     }
+     
+     std::vector<int> zero_current_dofs;
+     for(unsigned int i_dof=0; i_dof<J.size(); i_dof++)
+     {
+       if(J[i_dof].norm() == 0)
+       	 zero_current_dofs.push_back(i_dof);
+     }
+     
+     bool pick_direction = false;   //flag indicating whether averaging will yield zero vectors
+     while(zero_current_dofs.size()>0)  //if there exist any zero current, redo the averaging step
+     {
+       std::vector<int> zero_current_dofs_temp;   //temp container for zero-current-dofs
+       for(unsigned int i=0; i<zero_current_dofs.size(); i++)
+       {
+         unsigned int i_dof = zero_current_dofs[i];
+         if(J[i_dof].norm()==0)
+         {
+           for(unsigned int nb=0; nb<dof_neighbour_dof[group][i].size(); nb++)
+         	 {	
+     //    			printf("x = %f,  ",J[dof_neighbour_dof[i_dof][nb]][0]);  //debug
+     //    			printf("y = %f,  ",J[dof_neighbour_dof[i_dof][nb]][1]);  //debug
+         		 J[i_dof] += J[dof_neighbour_dof[group][i_dof][nb]];
+         	 }
+         		  
+         	 if(J[i_dof].norm() == 0)
+         		 zero_current_dofs_temp.push_back(i_dof);
+         }
+       }
+       if(zero_current_dofs.size() == zero_current_dofs_temp.size())   //if averaging is no longer effective, switch to picking direction
+       {
+       	 pick_direction = true;
+         break;
+       } 
+       zero_current_dofs.clear();
+       zero_current_dofs = zero_current_dofs_temp;
+       zero_current_dofs_temp.clear();
+       std::cout<<"Averaging Current(J)...  # 0-J DOFs: "<<zero_current_dofs.size()<<std::endl;
+     }
+     
+     if(pick_direction)
+     {
+     	 while(zero_current_dofs.size()>0)  //if there exist any zero current, redo the averaging step
+       {
+         std::vector<int> zero_current_dofs_temp;   //temp container for zero-current-dofs
+       	 for(unsigned int i=0; i<zero_current_dofs.size(); i++)
+         {
+         	 unsigned int i_dof = zero_current_dofs[i];
+           if(J[i_dof].norm()==0)
+           {
+         	   for(unsigned int nb=0; nb<dof_neighbour_dof[group][i].size(); nb++)
+           	 {
+           	 	 unsigned int neighbour = dof_neighbour_dof[group][i_dof][nb];
+           	 	 if(J[neighbour].norm() > 0)    //pick the first no-zero neighbour as the direction
+           	  	 	J[i_dof] = J[neighbour];
+             }
+           }
+         }
+         zero_current_dofs.clear();
+         zero_current_dofs = zero_current_dofs_temp;
+         zero_current_dofs_temp.clear();
+         std::cout<<"Averaging Current(J)...  # 0-J DOFs: "<<zero_current_dofs.size()<<std::endl;
+       }
+     }
+         
+     
+     //Renormalize J_vector;
+     for(unsigned int i_dof=0; i_dof<J.size(); i_dof++)
+     {
+       if(J[i_dof].norm() != 0)
+         J[i_dof] /= J[i_dof].norm();
+       else
+         printf("Zero Current Encountered!!\n");
+     }
+     
+     for(unsigned int i_dof=0; i_dof<J_vector.size(); i_dof++)
+       for(unsigned int component=0; component<dim; component++)
+     	   J_vector[i_dof][component+dim] = J[i_dof][component];
+      
+    //After obtaining J, reconstruct the psi_plus_recon
+    for(unsigned int level=1; level<=material_data.get_n_moments()/2; level++)
+     for(unsigned int n_w=0; n_w<(dim==2?2:4)*level; n_w++)
+     {
+       unsigned int m = (dim==2?2:4)*(1+(level-1))*(level-1)/2+n_w;  //m is the direction index, Omega_m
+        
+       psi_plus_recon[group][m].reinit(sn_group[group]->dof_handler.n_dofs(),false);
+         
+       for(unsigned int i_dof=0; i_dof<psi_plus_recon[group][m].size(); i_dof++)
+       {   
+         double mu;
+         mu = Omega[m]*J[i_dof];  // mu = Omega_m * phi_1/|phi_1|
+         
+         for(unsigned int n=0;n<phi_even_spn[group].size();n=n+2)
+         {
+           double Pnm = Legendre::Pn(n, mu);
+           if (J[i_dof].norm()==0.0)  //detect whether J has a norm of zero
+           {
+           	 cout<<"norm(J) is zero!!!   mu="<<mu<<endl;
+           	 cout<<"Pn(mu) = "<<Pnm<<endl;
+           }
+           psi_plus_recon[group][m](i_dof) += (2.0*n+1.0)/(4.0*M_PI)*phi_even_spn[group][n](i_dof)*Pnm;
+           
+         }
+         
+       }
+     }
+       
+     for(unsigned int i=0; i<J_vector.size(); i++)
+     {
+       for(unsigned int component=0; component<2*dim; component++)
+         J_out<<J_vector[i][component]<<" ";
+       J_out<<endl;
+     }
+     
+     //cout<<grad_vector[i][2]*grad_vector[i][2]+grad_vector[i][3]*grad_vector[i][3]<<" ";
+  
+     for(unsigned int i=0; i<grad_vector.size(); i++)
+     {
+       for(unsigned int component=0; component<2*dim; component++)
+         grad_out<<grad_vector[i][component]<<" ";
+       grad_out<<endl;
+       //cout<<grad_vector[i][2]*grad_vector[i][2]+grad_vector[i][3]*grad_vector[i][3]<<" ";
+     }
+      
+    grad_out.close();
+    J_out.close();
+  }
+}
 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 template <int dim>
 void SN<dim>::assemble_system (unsigned int group, unsigned int m)
@@ -1859,7 +1855,7 @@ void SN<dim>::assemble_system (unsigned int group, unsigned int m)
  const QGauss<dim-1> face_quadrature_formula(fe.degree +1);  
  const unsigned int n_face_q_points = face_quadrature_formula.size();
  FEFaceValues<dim> fe_face_values (fe, face_quadrature_formula, 
-        update_values | update_q_points | update_normal_vectors | update_JxW_values | update_gradients);
+        update_values | update_q_points | update_normal_vectors | update_JxW_values);
 
  const unsigned int   dofs_per_cell = fe.dofs_per_cell; 
  const unsigned int   n_q_points    = quadrature_formula.size(); 
@@ -1897,48 +1893,40 @@ void SN<dim>::assemble_system (unsigned int group, unsigned int m)
    {
     for (unsigned int j=0; j<dofs_per_cell; ++j)  //we give the values to the matrix
     {
-     cell_matrix(i,j) += ((
+     cell_matrix(i,j) += ((diffusion_coefficient *
           Omega[m] * fe_values.shape_grad (i, q_point) *
           Omega[m] * fe_values.shape_grad (j, q_point) +
-         st*st*         
+         st *         
          fe_values.shape_value (i,q_point) * fe_values.shape_value (j,q_point)) *
          fe_values.JxW (q_point));
          
-//     cell_scattering_matrix(i,j) += 1.0/(4.0*M_PI)*ss0*
-//            fe_values.shape_value(i,q_point) *
-//            fe_values.shape_value(j,q_point) *
-//            fe_values.JxW(q_point);
-     
-     //piece-wise constant \sigma_t
-     cell_matrix(i,j) += (
-         st*Omega[m]* 
-         ( fe_values.shape_grad (i,q_point) * fe_values.shape_value (j,q_point) +
-           fe_values.shape_value (i,q_point) * fe_values.shape_grad (j,q_point)  ) *
-         fe_values.JxW (q_point));
-
-    }
+     cell_scattering_matrix(i,j) += 1.0/(4.0*M_PI)*ss0*
+            fe_values.shape_value(i,q_point) *
+            fe_values.shape_value(j,q_point) *
+            fe_values.JxW(q_point);
+     }
   
     // we give the values for the right-hand-side
     // First, the contribution to RHS due to even parity external source
-    cell_rhs(i) +=( right_hand_side.get_source (fe_values.quadrature_point (q_point), group, sa, domain_size) * 
-                    Omega[m]* fe_values.shape_grad (i, q_point) + 
-                    st*
-                    right_hand_side.get_source (fe_values.quadrature_point (q_point), group, sa, domain_size) * 
-                    fe_values.shape_value (i, q_point) )*
-                    fe_values.JxW (q_point);
+    cell_rhs(i) +=(
+        right_hand_side.get_source (fe_values.quadrature_point (q_point), group, sa, domain_size) * 
+          fe_values.shape_value (i, q_point) *
+          fe_values.JxW (q_point));
     // Second, the contribution to RHS due to odd parity external source      
-//    cell_rhs(i) += (
-//         1.0/st*right_hand_side_odd.get_source (fe_values.quadrature_point (q_point), group, domain_size, m) * 
-//          Omega[m]*fe_values.shape_grad (i, q_point) *
-//          fe_values.JxW (q_point) );
+    cell_rhs(i) += (
+         1.0/st*right_hand_side_odd.get_source (fe_values.quadrature_point (q_point), group, domain_size, m) * 
+          Omega[m]*fe_values.shape_grad (i, q_point) *
+          fe_values.JxW (q_point) );
   }
   
   
    
-
+  if (boundary_exist != parameters.boundary_conditions.end()) 
+  {
+   RC_exist=true;
    for (unsigned int face=0; face<GeometryInfo<dim>::faces_per_cell; ++face)   // we make a loop over all the face, if we have a face where we have a boundary 
                        // condition we go to the if
-    if (cell->at_boundary(face) /*&& (parameters.boundary_conditions[cell->face(face)->boundary_indicator()] == 2)*/)
+    if (cell->at_boundary(face) && (parameters.boundary_conditions[cell->face(face)->boundary_indicator()] == 2))
     {
      unsigned int side = cell->face(face)->boundary_indicator();
      fe_face_values.reinit (cell, face);
@@ -1946,65 +1934,39 @@ void SN<dim>::assemble_system (unsigned int group, unsigned int m)
      for (unsigned int q_point=0; q_point<n_face_q_points; ++q_point) // we modify the matrix and the right-hand-side because of the boundary condition
      {
       for (unsigned int i=0; i<dofs_per_cell; ++i)
-      {
-      	//boundary term due to laplace operator
-        if(Omega[m]* fe_face_values.normal_vector(q_point) > 0)  //if out-going direction, use first order equation for boundary condition
-        {
-          cell_rhs(i) +=  ( Omega[m] * fe_face_values.normal_vector(q_point) *
-             right_hand_side.get_source (fe_face_values.quadrature_point (q_point), group, sa, domain_size)  *
-             fe_face_values.shape_value(i,q_point) *
-             fe_face_values.JxW(q_point));
+      { 
+       cell_rhs(i) +=  ( abs( Omega[m] * fe_face_values.normal_vector(q_point) ) *
+           right_hand_side.get_Jinc (fe_face_values.quadrature_point (q_point), parameters.boundary_value[side], group, m+1, Omega, wt)  *
+           fe_face_values.shape_value(i,q_point) *
+           fe_face_values.JxW(q_point));
+       
 
-          for (unsigned int j=0; j<dofs_per_cell; j++)  
-             cell_matrix(i,j) +=  ( Omega[m] * fe_face_values.normal_vector(q_point) *
-               st*
-               fe_face_values.shape_value(i,q_point) *
-               fe_face_values.shape_value(j,q_point)*
-               fe_face_values.JxW(q_point));
-               
-        }
-        
-        //boundary term due to L* operating on source
-        cell_rhs(i) +=  -( Omega[m] * fe_face_values.normal_vector(q_point) *
-             right_hand_side.get_source (fe_face_values.quadrature_point (q_point), group, sa, domain_size)  *
+       for (unsigned int j=0; j<dofs_per_cell; j++)  
+        cell_matrix(i,j) +=  ( abs( Omega[m] * fe_face_values.normal_vector(q_point) ) *
              fe_face_values.shape_value(i,q_point) *
+             fe_face_values.shape_value(j,q_point)*
              fe_face_values.JxW(q_point));
-        
-        //piece-wise constant \sigma_t     
-        for (unsigned int j=0; j<dofs_per_cell; j++)
-               cell_matrix(i,j) +=  -( st*
-               fe_face_values.shape_value(i,q_point) * fe_face_values.shape_value(j,q_point) *
-               Omega[m]*fe_face_values.normal_vector(q_point) *
-               fe_face_values.JxW(q_point));
-        
-          
-//       if(Omega[m]* fe_face_values.normal_vector(q_point) < 0)    
-//       for (unsigned int j=0; j<dofs_per_cell; j++)
-//               cell_matrix(i,j) +=  -( Omega[m] * fe_face_values.shape_grad(i, q_point) *
-//               fe_face_values.shape_value(i,q_point) *
-//               Omega[m]*fe_face_values.normal_vector(q_point) *
-//               fe_face_values.JxW(q_point));
-        
       }
      }
     }
+  }
  
   cell->get_dof_indices (local_dof_indices);
   //============================== Begin ==================
-//  //Compute the reconstruction residual source
-//  for (unsigned int i=0; i<dofs_per_cell; ++i) // we put the matrix and the right-hand-side of the cell into the matirx and the right-hand-side of the system
-//  { 
-//   for (unsigned int j=0; j<dofs_per_cell; ++j)
-//   {
-//    sn_group[group]->system_psi_matrix.add (local_dof_indices[i],
-//         local_dof_indices[j],
-//         cell_matrix(i,j));
-//         
-//    sn_group[group]->system_scat_matrix.add (local_dof_indices[i],
-//         local_dof_indices[j],
-//         cell_scattering_matrix(i,j));
-//   }
-//  }
+  //Compute the reconstruction residual source
+  for (unsigned int i=0; i<dofs_per_cell; ++i) // we put the matrix and the right-hand-side of the cell into the matirx and the right-hand-side of the system
+  { 
+   for (unsigned int j=0; j<dofs_per_cell; ++j)
+   {
+    sn_group[group]->system_psi_matrix.add (local_dof_indices[i],
+         local_dof_indices[j],
+         cell_matrix(i,j));
+         
+    sn_group[group]->system_scat_matrix.add (local_dof_indices[i],
+         local_dof_indices[j],
+         cell_scattering_matrix(i,j));
+   }
+  }
 
   //============================== End =====================
 
@@ -2020,25 +1982,25 @@ void SN<dim>::assemble_system (unsigned int group, unsigned int m)
  }
 
  //Add the reconstruction residual to the RHS
-// if(RESIDUAL)
-// {
-//  Vector<double> temp;
-//  temp = psi_plus_recon[group][m];
-//  sn_group[group]->system_psi_matrix.vmult_add (sn_group[group]->system_rhs, temp*=(-1.0));
-//  temp = phi_spn_recon[group];
-//  sn_group[group]->system_scat_matrix.vmult_add (sn_group[group]->system_rhs, temp*=(1.0));
-// }
+ if(RESIDUAL)
+ {
+  Vector<double> temp;
+  temp = psi_plus_recon[group][m];
+  sn_group[group]->system_psi_matrix.vmult_add (sn_group[group]->system_rhs, temp*=(-1.0));
+  temp = phi_spn_recon[group];
+  sn_group[group]->system_scat_matrix.vmult_add (sn_group[group]->system_rhs, temp*=(1.0));
+ }
  
 
 
  //we take care about the term in the right-hand-side due to the other moments
-// for (unsigned int kj=0; kj < 1; kj = kj+2)  //for isotropic scattering, we are only concerned with the scalar flux: phi_even[0]
-// {
-//  {  
-//   sn_group[group]->assemble_scattering_matrix (kj, m, (2.0*kj+1.0)/(4.0*M_PI));
-//   sn_group[group]->scattering_matrix[kj].vmult_add (sn_group[group]->system_rhs, phi[group]);
-//  }
-// }
+ for (unsigned int kj=0; kj < 1; kj = kj+2)  //for isotropic scattering, we are only concerned with the scalar flux: phi_even[0]
+ {
+  {  
+   sn_group[group]->assemble_scattering_matrix (kj, m, (2.0*kj+1.0)/(4.0*M_PI));
+   sn_group[group]->scattering_matrix[kj].vmult_add (sn_group[group]->system_rhs, phi[group]);
+  }
+ }
  
 
  // we take care about the hanging nodes
@@ -2046,86 +2008,19 @@ void SN<dim>::assemble_system (unsigned int group, unsigned int m)
  sn_group[group]->hanging_node_constraints.condense (sn_group[group]->system_rhs);
  
   
- //Dirichlet Boundary Condition
- Quadrature<dim> dummy_quadrature (fe.get_unit_support_points());  //dummy quadrature points to contain actually the support point on unit cell
- FEValues<dim>   fe_values_dummy (fe, dummy_quadrature, update_q_points );  //auxiliary FEValues object to map the support point from unit cell to real cell
-
- FE_Q<dim-1> fe_face(1);
- Quadrature<dim-1> dummy_quadrature_face (fe_face.get_unit_support_points());  //dummy quadrature points to contain actually the support point on unit cell
- FEFaceValues<dim>   fe_face_values_dummy (fe, dummy_quadrature_face, update_q_points | update_normal_vectors );  //auxiliary FEValues object to map the support point from unit cell to real cell
- 
-
- const unsigned int ndof_face_dummy = dummy_quadrature_face.size(); 
- 
-  cell = sn_group[group]->dof_handler.begin_active();
-  endc = sn_group[group]->dof_handler.end();
-
- for (unsigned int i_cell=0; cell!=endc; ++cell, ++i_cell) 
- {
-   fe_values_dummy.reinit (cell);
-   cell->get_dof_indices (local_dof_indices);
-   
-
-     for (unsigned int face=0; face<GeometryInfo<dim>::faces_per_cell; ++face)   // we make a loop over all the face, if we have a face where we have a boundary 
-                       // condition we go to the if
-     {
-   	   if (cell->at_boundary(face) /*&& (parameters.boundary_conditions[cell->face(face)->boundary_indicator()] == 2)*/)
-       {
-         for (unsigned int i=0; i<dofs_per_cell; ++i)
-         {
-           if(fe.has_support_on_face(i, face))
-           {
-           	 fe_face_values_dummy.reinit(cell, face);
-           	 unsigned int i_face_dof;
-           	 for(unsigned j=0; j<ndof_face_dummy; j++)
-           	 {
-           	 	 if(fe_face_values_dummy.quadrature_point(j)(0) == fe_values_dummy.quadrature_point(i)(0) &&
-           	 		 fe_face_values_dummy.quadrature_point(j)(1) == fe_values_dummy.quadrature_point(i)(1) &&
-           	 		 fe_face_values_dummy.quadrature_point(j)(2) == fe_values_dummy.quadrature_point(i)(2) )
-           	   {
-           	 		 i_face_dof =j;
-           	 	 	 break;
-           	 	 }
-           	 }
-           	 		
-        	   if(Omega[m]* fe_face_values_dummy.normal_vector(i_face_dof) < 0)
-        	   {
-               double diri_value = 1.0/(4.0*M_PI); 
-               
-               for(unsigned i_dof=0; i_dof<sn_group[group]->dof_handler.n_dofs(); i_dof++)  //decouple dirichlet node from interior (column-wise)
-        	       sn_group[group]->system_rhs(i_dof) -= sn_group[group]->system_matrix.el(i_dof,local_dof_indices[i])*diri_value;
-        	   	 
-          	   for(unsigned j_dof=0; j_dof<sn_group[group]->dof_handler.n_dofs(); j_dof++)  //zero out rows
-        	       sn_group[group]->system_matrix.set(local_dof_indices[i],j_dof,0.0); 
-        	     for(unsigned i_dof=0; i_dof<sn_group[group]->dof_handler.n_dofs(); i_dof++)  //zero out colums
-        	       sn_group[group]->system_matrix.set(i_dof,local_dof_indices[i],0.0); 
-
-        	     
-        	     sn_group[group]->system_rhs(local_dof_indices[i]) = diri_value;  //T4_vertex represents the Manufacturered solution here!!!
-
-               sn_group[group]->system_matrix.set(local_dof_indices[i],local_dof_indices[i],1.0);   //set unity on diagonal element for Dirichlet nodes
-        	   }
-        	   	
-           }
-         }
-       }
-     }
-
-  }
  
   
-
-// std::map<unsigned int,double> boundary_values; //  we use that if we some Dirichlet conditions (not converted yet)
-// for (unsigned int i=0; i<parameters.boundary_conditions.size();i++)
-//  if (parameters.boundary_conditions[i]==1)
-//   VectorTools::interpolate_boundary_values (sn_group[group]->dof_handler,
-//                                            i,
-//                                            BoundaryValues<dim>(),
-//                                            boundary_values);
-// MatrixTools::apply_boundary_values (boundary_values,
-//                                      sn_group[group]->system_matrix,
-//                                      sn_group[group]->solution_moment[m],
-//                                      sn_group[group]->system_rhs);
+ std::map<unsigned int,double> boundary_values; //  we use that if we some Dirichlet conditions (not converted yet)
+ for (unsigned int i=0; i<parameters.boundary_conditions.size();i++)
+  if (parameters.boundary_conditions[i]==1)
+   VectorTools::interpolate_boundary_values (sn_group[group]->dof_handler,
+                                            i,
+                                            BoundaryValues<dim>(),
+                                            boundary_values);
+ MatrixTools::apply_boundary_values (boundary_values,
+                                      sn_group[group]->system_matrix,
+                                      sn_group[group]->solution_moment[m],
+                                      sn_group[group]->system_rhs);
 }
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 template<int dim>
@@ -2135,29 +2030,31 @@ void SN<dim>::compute_phi(unsigned int group)
  Vector<double> temp;
  phi[group].reinit(sn_group[group]->dof_handler.n_dofs(),false);
  
-  for(unsigned int angle = 0 ; angle < n_Omega; angle++)
+ for(unsigned int level=1; level<=material_data.get_n_moments()/2; level++)
+  for(unsigned int n_w=0; n_w<(dim==2 ? 2:4)*level; n_w++)
   {
+   unsigned int angle = (dim==2 ? 2:4)*(1+(level-1))*(level-1)/2+n_w;
    temp = sn_group[group]->solution_moment[angle];
-   phi[group] += temp*=((dim==2?2.0:1.0)*wt[angle]);
+   phi[group] += temp*=((dim==2?2.0:1.0)*2.0*wt[angle]);
   }
-
 }
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-//template<int dim>
-//void SN<dim>::compute_reconstruct_phi()
-//{
-//  for(unsigned int group=0; group<n_groups; group++)
-//  {
-//    Vector<double> temp;
-//    phi_spn_recon[group].reinit(sn_group[group]->dof_handler.n_dofs(),false);
-//
-//     for(unsigned int angle = 0 ; angle < n_Omega; level++)
-//     {
-//       temp = psi_plus_recon[group][angle];
-//       phi_spn_recon[group] += temp*=((dim==2?2.0:1.0)*wt[angle]);
-//     }
-//  }
-//}
+template<int dim>
+void SN<dim>::compute_reconstruct_phi()
+{
+  for(unsigned int group=0; group<n_groups; group++)
+  {
+    Vector<double> temp;
+    phi_spn_recon[group].reinit(sn_group[group]->dof_handler.n_dofs(),false);
+    for(unsigned int level=1; level<=material_data.get_n_moments()/2; level++)
+     for(unsigned int n_w=0; n_w<(dim==2 ? 2:4)*level; n_w++)
+     {
+       unsigned int angle = (dim==2 ? 2:4)*(1+(level-1))*(level-1)/2+n_w;
+       temp = psi_plus_recon[group][angle];
+       phi_spn_recon[group] += temp*=((dim==2?2.0:1.0)*2.0*wt[angle]);
+     }
+  }
+}
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 template<int dim>
 void SN<dim>::compute_response(unsigned int group)
@@ -2201,40 +2098,37 @@ void SN<dim>::compute_response(unsigned int group)
         fe_face_values.reinit (cell, face);
         
         for (unsigned int q_point=0; q_point<n_face_q_points; ++q_point) // we modify the matrix and the right-hand-side because of the boundary condition
-        {    	
-          for(unsigned int angle = 0 ; angle < n_Omega; angle++)
-          {
-          	
-            Vector<double> psi_plus_m = sn_group[group]->solution_moment[angle];
+        { 
+            	
+          for(unsigned int level=1; level<=material_data.get_n_moments()/2; level++)
+            for(unsigned int n_w=0; n_w<(dim==2?2:4)*level; n_w++)
+            {
+              unsigned int angle = (dim==2?2:4)*(1+(level-1))*(level-1)/2+n_w;
+              Vector<double> psi_plus_m = sn_group[group]->solution_moment[angle];
  
-            std::vector<double> face_psi_values(n_face_q_points);
-            std::vector<double> face_psi_values_recon(n_face_q_points);
-     		    fe_face_values.get_function_values(psi_plus_m,face_psi_values);	
-//   	  	    fe_face_values.get_function_values(psi_plus_recon[group][angle], face_psi_values_recon);
-              
-            if(Omega[angle]*fe_face_values.normal_vector(q_point) > 0.0)  //check if current Omega is out-going direction
-          	{
+              std::vector<double> face_psi_values(n_face_q_points);
+              std::vector<double> face_psi_values_recon(n_face_q_points);
+     		      fe_face_values.get_function_values(psi_plus_m,face_psi_values);	
+     		      fe_face_values.get_function_values(psi_plus_recon[group][angle], face_psi_values_recon);
+                
               leakage +=  abs( Omega[angle] * fe_face_values.normal_vector(q_point) ) *
-                        (face_psi_values[q_point]  // \psi(\Omega) += 2*psi+*(\Omega), \Omega*n >0  //check J_{spn} ?= J_{recon}
+                        2.0*(face_psi_values[q_point]  // \psi(\Omega) += 2*psi+*(\Omega), \Omega*n >0  //check J_{spn} ?= J_{recon}
                              /*- face_psi_values_recon[q_point]*/)*  // \psi(\Omega) += 2*psi+*(\Omega), \Omega*n >0
                        (dim==2?2.0:1.0)*wt[angle]*                       //integrate over half the sphere                                                                                                  
                        fe_face_values.JxW(q_point);        //integrate over cell volume
-            }
-            else
-            {             
+                         
               source +=  abs( Omega[angle] * fe_face_values.normal_vector(q_point) ) *
-                       (face_psi_values[q_point])*  // \psi(\Omega) += - f(-\Omega), \Omega*n >0
+                       (- right_hand_side.get_Jinc (fe_face_values.quadrature_point (q_point), parameters.boundary_value[side], group, angle+1, Omega, wt))*  // \psi(\Omega) += - f(-\Omega), \Omega*n >0
                        (dim==2?2.0:1.0)*wt[angle]*                       //integrate over half the sphere                                                                                                 
                        fe_face_values.JxW(q_point);        //integrate over cell volume 
  
             }
-          }
         }
       }
     }//end of boundary term		
 
 	}
-	response[group] = leakage;
+	response[group] = source + leakage;
   cout<<"Leakage of Interest: "<<leakage<<endl;
   cout<<"Source  of Interest: "<<source<<endl;
   cout<<"Half-Range-Current : "<<response[group]<<endl;
@@ -2296,49 +2190,52 @@ void SN<dim>::check_conservation(unsigned int group)
 			        *fe_values.JxW(q_point);		    //we calculate the absorption rate
 			
 			
-			for(unsigned int angle = 0 ; angle < n_Omega; angle++)
-      {
-		  	source += right_hand_side.get_source (fe_values.quadrature_point (q_point), group, sa, domain_size) *
-		  	          (dim==2?2.0:1.0)*wt[angle]*
-				  		    fe_values.JxW (q_point);    //we calculate the volumetric source rate
+			for(unsigned int level=1; level<=material_data.get_n_moments()/2; level++)
+        for(unsigned int n_w=0; n_w<(dim==2?2:4)*level; n_w++)
+        {
+        	unsigned int angle = (dim==2?2:4)*(1+(level-1))*(level-1)/2+n_w;
+		  	  source += right_hand_side.get_source (fe_values.quadrature_point (q_point), group, sa, domain_size) *
+		  	            (dim==2?2.0:1.0)*wt[angle]* 2.0*
+								    fe_values.JxW (q_point);    //we calculate the volumetric source rate
 		  }	  
 		}
 		
-
+		if (boundary_exist != parameters.boundary_conditions.end()) 
+		{
+			RC_exist=true;
 			for (unsigned int face=0; face<GeometryInfo<dim>::faces_per_cell; ++face) 		// we make a loop over all the face, if we have a face where we have a boundary 
 																												// condition we go to the if
-			if (cell->at_boundary(face))
+			if (cell->at_boundary(face) && (parameters.boundary_conditions[cell->face(face)->boundary_indicator()] == 2))
 			{
 				unsigned int side = cell->face(face)->boundary_indicator();
 				fe_face_values.reinit (cell, face);
 									
 				for (unsigned int q_point=0; q_point<n_face_q_points; ++q_point)	// we modify the matrix and the right-hand-side because of the boundary condition
 				{
-				  for(unsigned int angle = 0 ; angle < n_Omega; angle++)
-          {
-	         	Vector<double> psi_plus_m = sn_group[group]->solution_moment[angle];
+				  for(unsigned int level=1; level<=material_data.get_n_moments()/2; level++)
+            for(unsigned int n_w=0; n_w<(dim==2?2:4)*level; n_w++)
+            {
+        	    unsigned int angle = (dim==2?2:4)*(1+(level-1))*(level-1)/2+n_w;
+	         	  Vector<double> psi_plus_m = sn_group[group]->solution_moment[angle];
  
-            std::vector<double> face_psi_values(n_face_q_points);
-            fe_face_values.get_function_values(psi_plus_m,face_psi_values);	
-     		   
-     		    if(Omega[angle]*fe_face_values.normal_vector(q_point) > 0.0)  //check if current Omega is out-going direction
-          	{     
+              std::vector<double> face_psi_values(n_face_q_points);
+              fe_face_values.get_function_values(psi_plus_m,face_psi_values);	
+     		        
               sink +=  abs( Omega[angle] * fe_face_values.normal_vector(q_point)  ) *
-                     (face_psi_values[q_point]) *  // \psi(\Omega) = 2*psi+*(\Omega) - f(-\Omega), \Omega*n >0
+                     (2.0*face_psi_values[q_point]
+                      - right_hand_side.get_Jinc (fe_face_values.quadrature_point (q_point), parameters.boundary_value[side], group, angle+1, Omega, wt) ) *  // \psi(\Omega) = 2*psi+*(\Omega) - f(-\Omega), \Omega*n >0
                      (dim==2?2.0:1.0)*wt[angle]*                       //integrate over all directions                                                                                                  
                      fe_face_values.JxW(q_point);        //integrate over cell volume
-            }
-            else             
-            {         
-              source += abs( Omega[angle] * fe_face_values.normal_vector(q_point) ) *
-                      (face_psi_values[q_point]) *    // \psi(\Omega) = f(\Omega), \Omega*n <0
+                         
+                         
+             source += abs( Omega[angle] * fe_face_values.normal_vector(q_point) ) *
+                      right_hand_side.get_Jinc (fe_face_values.quadrature_point (q_point), parameters.boundary_value[side], group, angle+1, Omega, wt)  *    // \psi(\Omega) = f(\Omega), \Omega*n <0
                       (dim==2?2.0:1.0)*wt[angle]*                       //integrate over all directions                                                                                                  
                       fe_face_values.JxW(q_point);        //integrate over cell volume
-            }
           }
         }
       }
-
+    }
 		
 	}
 	
@@ -2360,13 +2257,13 @@ void SN<dim>::output (int cycle) const
     data_out.add_data_vector (solution[group], "solution");
    // data_out.add_data_vector (psi_plus_recon[0], "psi_plus_0");
    // data_out.add_data_vector (psi_plus_recon[1], "psi_plus_1");
-   // data_out.add_data_vector (phi_even_spn[group][0], "solution_spn_recon");
+    data_out.add_data_vector (phi_even_spn[group][0], "solution_spn_recon");
     //calculate d/phi 
-//    Vector<double> dPhi;
-//    dPhi = solution[group];
-//    if(!RESIDUAL)
-//    	dPhi -= phi_even_spn[group][0];  //if using Direct Method (d\phi = \phi_Sn - \phi_SPn)
-//    data_out.add_data_vector(dPhi,"dPhi");
+    Vector<double> dPhi;
+    dPhi = solution[group];
+    if(!RESIDUAL)
+    	dPhi -= phi_even_spn[group][0];  //if using Direct Method (d\phi = \phi_Sn - \phi_SPn)
+    data_out.add_data_vector(dPhi,"dPhi");
    
     data_out.build_patches ();
     
@@ -2376,49 +2273,49 @@ void SN<dim>::output (int cycle) const
     data_out.write_vtk (output); 
     
     //===== Store d\phi in the output file
-//           std::ostringstream dPhi_filename;
-//           if(RESIDUAL)
-//           	dPhi_filename<<"dPhi_res-"<<group<<".txt";
-//           else
-//           	dPhi_filename<<"dPhi_ext-"<<group<<".txt";
-//   
-//   				std::ofstream dPhi_out(dPhi_filename.str().c_str());
-//   				
-//   				
-//   			std::vector<std::vector<double> > dPhi_vector(solution[group].size());
-//   			for(unsigned int i=0; i<dPhi_vector.size(); i++)
-//   	 			dPhi_vector[i].resize(1+dim, 0.0);
-//   			Quadrature<dim> dummy_quadrature (fe.get_unit_support_points());
-//   			FEValues<dim> fe_values (fe, dummy_quadrature, update_q_points | update_gradients  | update_JxW_values);
-//   			
-//   			const unsigned int   dofs_per_cell = sn_group[group]->fe.dofs_per_cell;
-//   			std::vector<unsigned int> local_dof_indices (dofs_per_cell); 
-//   				
-//   			typename DoFHandler<dim>::active_cell_iterator	
-//   			cell = sn_group[group]->dof_handler.begin_active(),
-//   			endc = sn_group[group]->dof_handler.end();
-//   			
-//   			for (unsigned int i=0; cell!=endc; ++cell, ++i) 
-//   			{
-//   				fe_values.reinit(cell);
-//   				cell->get_dof_indices (local_dof_indices);  //get mapping from local to global dof
-//   				for (unsigned int j=0; j<dofs_per_cell; ++j)
-//         	{
-//         		unsigned int idof = local_dof_indices[j];
-//            dPhi_vector[idof][dim] = dPhi(idof);
-//            
-//            for(unsigned int component=0; component<dim; component++) 
-//              dPhi_vector[idof][component] = fe_values.quadrature_point (j)[component];
-//         	}
-//         }
-//         for(unsigned int i=0; i<dPhi_vector.size(); i++)
-//         {
-//           for(unsigned int component=0; component<dim+1; component++) 
-//   				   dPhi_out<<dPhi_vector[i][component]<<" ";
-//   			   dPhi_out<<endl;
-//   			 }
-//   			
-//   			dPhi_out.close();
+           std::ostringstream dPhi_filename;
+           if(RESIDUAL)
+           	dPhi_filename<<"dPhi_res-"<<group<<".txt";
+           else
+           	dPhi_filename<<"dPhi_ext-"<<group<<".txt";
+   
+   				std::ofstream dPhi_out(dPhi_filename.str().c_str());
+   				
+   				
+   			std::vector<std::vector<double> > dPhi_vector(solution[group].size());
+   			for(unsigned int i=0; i<dPhi_vector.size(); i++)
+   	 			dPhi_vector[i].resize(1+dim, 0.0);
+   			Quadrature<dim> dummy_quadrature (fe.get_unit_support_points());
+   			FEValues<dim> fe_values (fe, dummy_quadrature, update_q_points | update_gradients  | update_JxW_values);
+   			
+   			const unsigned int   dofs_per_cell = sn_group[group]->fe.dofs_per_cell;
+   			std::vector<unsigned int> local_dof_indices (dofs_per_cell); 
+   				
+   			typename DoFHandler<dim>::active_cell_iterator	
+   			cell = sn_group[group]->dof_handler.begin_active(),
+   			endc = sn_group[group]->dof_handler.end();
+   			
+   			for (unsigned int i=0; cell!=endc; ++cell, ++i) 
+   			{
+   				fe_values.reinit(cell);
+   				cell->get_dof_indices (local_dof_indices);  //get mapping from local to global dof
+   				for (unsigned int j=0; j<dofs_per_cell; ++j)
+         	{
+         		unsigned int idof = local_dof_indices[j];
+            dPhi_vector[idof][dim] = dPhi(idof);
+            
+            for(unsigned int component=0; component<dim; component++) 
+              dPhi_vector[idof][component] = fe_values.quadrature_point (j)[component];
+         	}
+         }
+         for(unsigned int i=0; i<dPhi_vector.size(); i++)
+         {
+           for(unsigned int component=0; component<dim+1; component++) 
+   				   dPhi_out<<dPhi_vector[i][component]<<" ";
+   			   dPhi_out<<endl;
+   			 }
+   			
+   			dPhi_out.close();
     
     //===== Output the Response  ========
     std::ostringstream response_filename;
@@ -2429,37 +2326,37 @@ void SN<dim>::output (int cycle) const
    
    
     //========echo the read-in SPn data, to be checked agains input SPn data file.
-//    std::ostringstream f_out_filename;
-//    f_out_filename<<"out_test-"<<group;
-//    std::ofstream f_out(f_out_filename.str().c_str());     //creat file to store leakage through left boundary
-//    AssertThrow (f_out, ExcMessage ("Creating output file failed!"));
-//    unsigned int ndof_even = dof_repitition[group].size();
-//    unsigned int ndof_odd = phi_odd_spn[group][1].size();
-//    unsigned int n_moments = phi_even_spn[group].size();
-//    
-//    f_out<<"#Even Moments "<<ndof_even<<" "<<n_moments<<endl;
-//    for(unsigned int idof=0; idof<ndof_even; idof++)
-//    {
-//     for(unsigned int moment=0; moment<n_moments; moment=moment+2)
-//      f_out<<phi_even_spn[group][moment](idof)<<" ";
-//     f_out<<"E ";
-//     
-//     f_out<<dof_repitition[group](idof)<<" ";
-//     
-//     for(unsigned int i_nb=0; i_nb<dof_neighbour_dof[group][idof].size(); i_nb++)
-//   		  f_out<<dof_neighbour_dof[group][idof][i_nb]<<" ";
-//   		
-//     f_out<<"#";
-//     f_out<<endl;
-//    }
-//    f_out<<"#Odd Moments "<<ndof_odd<<" "<<n_moments<<endl;
-//    for(unsigned int idof=0; idof<ndof_odd; idof++)
-//    {
-//     for(unsigned int moment=1; moment<n_moments; moment=moment+2)
-//       f_out<<phi_odd_spn[group][moment](idof)<<" ";
-//     f_out<<endl;
-//    }
-//    f_out.close();
+    std::ostringstream f_out_filename;
+    f_out_filename<<"out_test-"<<group;
+    std::ofstream f_out(f_out_filename.str().c_str());     //creat file to store leakage through left boundary
+    AssertThrow (f_out, ExcMessage ("Creating output file failed!"));
+    unsigned int ndof_even = dof_repitition[group].size();
+    unsigned int ndof_odd = phi_odd_spn[group][1].size();
+    unsigned int n_moments = phi_even_spn[group].size();
+    
+    f_out<<"#Even Moments "<<ndof_even<<" "<<n_moments<<endl;
+    for(unsigned int idof=0; idof<ndof_even; idof++)
+    {
+     for(unsigned int moment=0; moment<n_moments; moment=moment+2)
+      f_out<<phi_even_spn[group][moment](idof)<<" ";
+     f_out<<"E ";
+     
+     f_out<<dof_repitition[group](idof)<<" ";
+     
+     for(unsigned int i_nb=0; i_nb<dof_neighbour_dof[group][idof].size(); i_nb++)
+   		  f_out<<dof_neighbour_dof[group][idof][i_nb]<<" ";
+   		
+     f_out<<"#";
+     f_out<<endl;
+    }
+    f_out<<"#Odd Moments "<<ndof_odd<<" "<<n_moments<<endl;
+    for(unsigned int idof=0; idof<ndof_odd; idof++)
+    {
+     for(unsigned int moment=1; moment<n_moments; moment=moment+2)
+       f_out<<phi_odd_spn[group][moment](idof)<<" ";
+     f_out<<endl;
+    }
+    f_out.close();
   }
 }
 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -2472,9 +2369,9 @@ void SN<dim>::run ()
  unsigned int dofs = 0;
  bool all_output = parameters.all_output;
 
-// read_SPn_data();  //read-in flux moments from SPn output
-// reconstruct_SPn_psi_plus(); //reconstruct psi_plus from SPn solution=
-// compute_reconstruct_phi();
+ read_SPn_data();  //read-in flux moments from SPn output
+ reconstruct_SPn_psi_plus(); //reconstruct psi_plus from SPn solution=
+ compute_reconstruct_phi();
 
  
  for (unsigned int group=0; group< n_groups; group++) 
@@ -2501,7 +2398,7 @@ void SN<dim>::run ()
    
   std::vector<double> conv(n_groups, 10);
   bool not_converged = true;
-  for(unsigned int j=0; not_converged && j<1 ;j++) // we solve the direct problem. we need to iterate over all the moments until we converge
+  for(unsigned int j=0; not_converged && j<=20 ;j++) // we solve the direct problem. we need to iterate over all the moments until we converge
   {
     not_converged = false;  //reset the not_conerged flag to FALSE for all groups
   	cout<<"Begin Source Iteration, j = "<<j<<endl;   
@@ -2530,7 +2427,7 @@ void SN<dim>::run ()
         compute_phi(group);
         
         //================ DSA =========================
-//        dsa->run(phi_old[group], phi[group], parameters.n_iteration_cg, parameters.convergence_tolerance, group);
+        dsa->run(phi_old[group], phi[group], parameters.n_iteration_cg, parameters.convergence_tolerance, group);
         
         //============ Check Convergence ===================
         if(j!=0)

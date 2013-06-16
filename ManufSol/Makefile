@@ -21,8 +21,8 @@
 #target = go_EvenSn_scalar_2D_DSA_case1
 #target = go_EvenSn_scalar_2D_DSA_case1_MG
 #target = go_SA_Sn_scalar_2D_DSA_case1_MG
-#target = go_SA_Sn_lnr_ibp_MG
-target = go_SA_Sn_lnr_MG
+target = go_SA_Sn_lnr_ibp_MG
+#target = go_SA_Sn_lnr_MG
 #target = go_SA_Sn_pwc_MG
 #target = go_EvenSn_scalar_2D_DSA_case1_MG_selfmesh
 #target = go_EvenSn_scalar_2D_DSA_case1_adjoint
@@ -37,7 +37,7 @@ target = go_SA_Sn_lnr_MG
 # run-time checking of parameters and internal states is performed, so
 # you should set this value to `on' while you develop your program,
 # and to `off' when running production computations.
-debug-mode = on
+debug-mode = off
 
 
 # As third field, we need to give the path to the top-level deal.II

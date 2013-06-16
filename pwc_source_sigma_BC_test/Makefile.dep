@@ -1,5 +1,5 @@
-./go_SA_Sn_lnr_ibp_MG.o: \
-		go_SA_Sn_lnr_ibp_MG.cc\
+./go_SA_Sn_pwc_MG.o: \
+		go_SA_Sn_pwc_MG.cc\
 		/home/yunhuang/deal.II/contrib/boost/include/boost/algorithm/string/compare.hpp\
 		/home/yunhuang/deal.II/contrib/boost/include/boost/algorithm/string/concept.hpp\
 		/home/yunhuang/deal.II/contrib/boost/include/boost/algorithm/string/config.hpp\
@@ -647,7 +647,6 @@
 		/home/yunhuang/deal.II/include/deal.II/fe/mapping_q.h\
 		/home/yunhuang/deal.II/include/deal.II/fe/mapping_q1.h\
 		/home/yunhuang/deal.II/include/deal.II/grid/grid_generator.h\
-		/home/yunhuang/deal.II/include/deal.II/grid/grid_in.h\
 		/home/yunhuang/deal.II/include/deal.II/grid/grid_out.h\
 		/home/yunhuang/deal.II/include/deal.II/grid/grid_refinement.h\
 		/home/yunhuang/deal.II/include/deal.II/grid/grid_tools.h\
@@ -742,8 +741,8 @@
 		/home/yunhuang/trilinos-10.6.2/include/Teuchos_getBaseObjVoidPtr.hpp\
 		/home/yunhuang/trilinos-10.6.2/include/Teuchos_map.hpp\
 		/home/yunhuang/trilinos-10.6.2/include/Teuchos_toString.hpp
-./go_SA_Sn_lnr_ibp_MG.g.o: \
-		go_SA_Sn_lnr_ibp_MG.cc\
+./go_SA_Sn_pwc_MG.g.o: \
+		go_SA_Sn_pwc_MG.cc\
 		/home/yunhuang/deal.II/contrib/boost/include/boost/algorithm/string/compare.hpp\
 		/home/yunhuang/deal.II/contrib/boost/include/boost/algorithm/string/concept.hpp\
 		/home/yunhuang/deal.II/contrib/boost/include/boost/algorithm/string/config.hpp\
@@ -1391,7 +1390,6 @@
 		/home/yunhuang/deal.II/include/deal.II/fe/mapping_q.h\
 		/home/yunhuang/deal.II/include/deal.II/fe/mapping_q1.h\
 		/home/yunhuang/deal.II/include/deal.II/grid/grid_generator.h\
-		/home/yunhuang/deal.II/include/deal.II/grid/grid_in.h\
 		/home/yunhuang/deal.II/include/deal.II/grid/grid_out.h\
 		/home/yunhuang/deal.II/include/deal.II/grid/grid_refinement.h\
 		/home/yunhuang/deal.II/include/deal.II/grid/grid_tools.h\

@@ -1695,7 +1695,7 @@ void SN<dim>::assemble_system (unsigned int group, unsigned int m)
  const QGauss<dim-1> face_quadrature_formula(2*fe.degree +1);  
  const unsigned int n_face_q_points = face_quadrature_formula.size();
  FEFaceValues<dim> fe_face_values (fe, face_quadrature_formula, 
-        update_values | update_q_points | update_normal_vectors | update_JxW_values);
+        update_values | update_gradients | update_q_points | update_normal_vectors | update_JxW_values);
         
  //Auxiliary quadrature to get coordinates of DOFS
   Quadrature<dim> dummy_quadrature (fe.get_unit_support_points());  //dummy quadrature points to contain actually the support point on unit cell
@@ -1847,6 +1847,15 @@ void SN<dim>::assemble_system (unsigned int group, unsigned int m)
               fe_face_values.shape_value(j,q_point)*
               fe_face_values.JxW(q_point));
        }
+       
+       //in-coming portion of the surface term        
+//       if(Omega[m]* fe_face_values.normal_vector(q_point) < 0)    
+//       for (unsigned int j=0; j<dofs_per_cell; j++)
+//               cell_matrix(i,j) +=  -( Omega[m] * fe_face_values.shape_grad(i, q_point) *
+//               fe_face_values.shape_value(i,q_point) *
+//               Omega[m]*fe_face_values.normal_vector(q_point) *
+//               fe_face_values.JxW(q_point));
+       
       }
      }
      

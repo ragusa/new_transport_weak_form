@@ -1,0 +1,191 @@
+\documentclass{article}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amstext}
+\usepackage{amsbsy}
+\usepackage{mathtools}
+\usepackage{xspace}
+\usepackage[makeroom]{cancel}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% operators
+\renewcommand{\div}{\vec{\nabla}\! \cdot \!}
+\newcommand{\grad}{\vec{\nabla}}
+% latex shortcuts
+\newcommand{\bea}{\begin{eqnarray}}
+\newcommand{\eea}{\end{eqnarray}}
+\newcommand{\be}{\begin{equation}}
+\newcommand{\ee}{\end{equation}}
+\newcommand{\bal}{\begin{align}}
+\newcommand{\eali}{\end{align}}
+\newcommand{\bi}{\begin{itemize}}
+\newcommand{\ei}{\end{itemize}}
+\newcommand{\ben}{\begin{enumerate}}
+\newcommand{\een}{\end{enumerate}}
+% shortcut for domain notation
+\newcommand{\D}{\mathcal{D}}
+% vector shortcuts
+\newcommand{\vo}{\vec{\Omega}}
+\newcommand{\vx}{\underline{\boldsymbol{x}}}
+\newcommand{\vr}{\vec{r}}
+\newcommand{\vn}{\vec{n}}
+\newcommand{\vnk}{\vec{\mathbf{n}}}
+\newcommand{\vj}{\vec{J}}
+\newcommand{\me}{\mathcal{E}}
+\newcommand{\vme}{\vec{\mathcal{E}}}
+\newcommand{\vmeo}{\vec{\mathcal{E}}^o}
+\newcommand{\vmf}{\vec{\mathcal{F}}}
+\newcommand{\vphi}{\vec{\phi}}
+\newcommand{\vphio}{\vec{\Phi}^o}
+\newcommand{\vs}{\vec{S}}
+% special expressions
+\newcommand{\spn}{\ensuremath{\textit{SP}_N}\xspace}
+\newcommand{\sn}{\ensuremath{\textit{S}_N}\xspace}
+\newcommand{\epsn}{\textit{even-parity} \sn}
+\newcommand{\Half}{\text{\it Half\,}}
+% jump
+\newcommand{\std}{\textit{std}}
+\newcommand{\cmp}{\textit{cmp}}
+\newcommand{\can}{\textit{can}}
+\newcommand{\mi}[1]{\ensuremath{{\textit{#1}}}\xspace}
+\newcommand{\upp}[1]{\overline{#1}}
+\newcommand{\low}[1]{\underline{#1}}
+
+\newcommand{\direct}{\textit{direct }}
+\newcommand{\residual}{\textit{residual }}
+\newcommand{\adjoint}{\textit{adjoint }}
+% extra space
+\newcommand{\qq}{\quad\quad}
+% common reference commands
+\newcommand{\eqt}[1]{Eq.~(\ref{#1})}                     % equation
+\newcommand{\fig}[1]{Fig.~\ref{#1}}                      % figure
+\newcommand{\tbl}[1]{Table~\ref{#1}}                     % table
+\newcommand{\sct}[1]{Section~\ref{#1}}                   % section
+\newcommand{\chp}[1]{Chapter~\ref{#1}}                   % chapter
+
+\newcommand{\mt}[1]{\marginpar{\tiny #1}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\begin{center}
+{\Huge Weak Form for the Self-Adjoint $S_N$ Formalism}
+\end{center}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Self-Adjoint $S_N$}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\bea
+\text{LHS}: &=& (-\vo\cdot\grad + \sigma_a)(\vo\cdot\grad + \sigma_a)\psi \\
+            &=& \underbrace{-\vo\cdot\grad\vo\cdot\grad\psi}_{\textcircled{1}} + \underbrace{\left[\sigma_a\vo\cdot\grad\psi - \vo\cdot\grad(\sigma_a\psi)\right]}_{\textcircled{2}} + \underbrace{\sigma_a^2\psi}_{\textcircled{3}} \\
+\text{RHS}: &=& (-\vo\cdot\grad + \sigma_a)Q \\
+            &=& \underbrace{-\vo\cdot\grad Q}_{\textcircled{4}} + \underbrace{\sigma_a Q}_{\textcircled{5}}
+\eea
+Note that for radiative transfer problem, $\sigma_a$ is embedded in the source $Q$:
+\be
+Q = \sigma_a B
+\ee
+where $B$ is the Planckian source determined by the temperature.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Weak form}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Multiply every term in LHS and RHS by basis function $b_i$ and integrate over the problem volume:
+
+LHS:
+\begin{align}
+ & \boxed{\int\textcircled{1}b_i dV} \nonumber\\
+ &= \int -b_i\vo\cdot\grad\vo\cdot\grad\psi dV \\
+ &= \underbrace{- \oint(\vo\cdot\grad\psi)\;b_i\;\vo\cdot\vn dA}_{*} + \int (\vo\cdot\grad\psi)(\vo\cdot\grad b_i) dV
+\end{align}
+
+\begin{align}
+ & \boxed{\int\textcircled{2}b_i dV} \nonumber\\
+ &= \int\left[\sigma_a\div(\vo\psi) - \div(\sigma_a\;\vo\psi)\right]\;b_i\;dV \\
+ &= \int(-\vo\psi\cdot\grad\sigma_a)\;b_i\;dV = \underline{\underline{\int(-\vo\psi b_i\cdot\grad\sigma_a)dV}} \label{eq:pwl_lhs} \\
+ &= \underline{-\oint \sigma_a\;\psi b_i\;\vo\cdot\vn dA + \int\sigma_a\div(\vo\psi b_i) dV} \label{eq:pwc_lhs}
+\end{align}
+
+\begin{align}
+ & \boxed{\int\textcircled{3}b_i dV} \nonumber\\
+ &= \int\sigma_a^2\psi b_i dV
+\end{align} 
+ 
+ 
+RHS:
+\begin{align}
+ & \boxed{\int\textcircled{4}b_i dV} \nonumber\\
+ &= \int (-\vo\cdot\grad Q)b_i dV  \\
+ &= \underline{-\oint b_iQ\vo\cdot\vn dA + \int Q\vo\cdot\grad b_i dV} \label{eq:pwc_rhs}\\
+ \text{or} \\
+ &= -\int\vo\cdot\grad(\sigma_a B)\;b_i\; dV \\
+ &= \underline{\underline{-\int\vo(\grad\sigma_a B + \grad B\sigma_a)\;b\;dV}} \label{eq:pwl_rhs}
+\end{align}
+
+\begin{align}
+ & \boxed{\int\textcircled{5}b_i dV} \nonumber\\
+ &= \int\sigma_a\;Q\;b_i\;dV = \int\sigma_a^2\;B\;b_i\;dV
+\end{align}
+
+Depending on the order of finite element chosen to represent the solution and material property (opacity (cross-section), source), two different sets of weak form are proposed:
+
+If we choose to use piece-wise constant ($0^{th}$ order) finite element, then it is suggested to use the terms $\underline{underlined}$ whenever possible (as seen in \eqt{eq:pwc_lhs} and \eqt{eq:pwc_rhs}).
+
+If we choose to use piece-wise linear ($1^{st}$ order) finite element, then it is suggested to use the terms $\underline{\underline{double-lined}}$ whenever possible (as seen in \eqt{eq:pwl_lhs} and \eqt{eq:pwl_rhs}).
+
+Note that one can choose to use either the $\underline{underlined}$ or the $\underline{\underline{double-lined}}$, not both. Because they are mathematically equivalent.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Boundary condition}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+For the in-coming directions, we use Dirichlet boundary condition to explicitly specify the value of $\psi$ on the boundary.
+
+For the out-going directions, we use the first order equation:
+\be
+\vo\cdot\grad\psi + \sigma_a\psi = Q \Rightarrow \boxed{\vo\cdot\grad\psi = Q - \sigma_a\psi} \label{eq:bc_out}
+\ee
+The out-going boundary condition \eqt{eq:bc_out} is applied to the $*$ term only, where $\vo\cdot\grad\psi$ is replaced by $Q - \sigma_a\psi$, yielding:
+\be
+* = \oint(\vo\cdot\grad\psi)\;b_i\;\vo\cdot\vn dA = \underbrace{-\oint Q\;b_i\;\vo\cdot\vn dA}_\text{move to RHS} + \underbrace{\oint\sigma_a\psi b_i \vo\cdot\vn dA}_\text{keep on LHS}, \quad \text{for }\vo\cdot\vn>0
+\ee
+The $\vo\cdot\vn>0$ portion of this $*$ term is neglected, it is equivalent to force:
+\be
+* = \oint(\vo\cdot\grad\psi)\;b_i\;\vo\cdot\vn dA = 0, \quad \text{for }\vo\cdot\vn<0
+\ee
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Final form after cancellation of the surface terms}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Take the five kernels listed in the above section, using the $\underline{underlined}$ as seen in \eqt{eq:pwc_lhs} and \eqt{eq:pwc_rhs}, and also applying the first order boundary condition \eqt{eq:bc_out} for both out-going and in-coming directions for the boundary term ($*$), we get:
+\begin{align}
+\text{LHS} :=&  -\cancelto{\text{II}}{\oint Q\;b_i\;\vo\cdot\vn dA} + \cancelto{\text{I}}{\oint\sigma_a\psi b_i \vo\cdot\vn dA} + \int (\vo\cdot\grad\psi)(\vo\cdot\grad b_i) dV \nonumber\\
+             &  -\cancelto{\text{I}}{\oint \sigma_a\;\psi b_i\;\vo\cdot\vn dA} + \boxed{\int\sigma_a\div(\vo\psi b_i) dV} \nonumber\\
+             &  +\int\sigma_a^2\psi b_i dV \\
+\text{RHS} :=&  -\cancelto{\text{II}}{\oint b_iQ\vo\cdot\vn dA} + \int Q\vo\cdot\grad b_i dV  \nonumber\\
+             &  + \int\sigma_a\;Q\;b_i\;dV
+\end{align}
+We can see that the ``I'' terms cancels out each other, and the same for the ``II'' terms. Finally, expand out the boxed term in LHS:
+\be
+\boxed{\int\sigma_a\div(\vo\psi b_i) dV} = \int\sigma_a b_i\vo\cdot\grad\psi dV + \int\sigma_a\psi\vo\cdot\grad b_i
+\ee
+Our final form becomes:
+\begin{align}
+\text{LHS} :=&  \int (\vo\cdot\grad\psi)(\vo\cdot\grad b_i) dV \nonumber\\
+             &  \int\sigma_a b_i\vo\cdot\grad\psi dV + \int\sigma_a\psi\vo\cdot\grad b_i \nonumber\\
+             &  +\int\sigma_a^2\psi b_i dV \\
+\text{RHS} :=&  \int Q\vo\cdot\grad b_i dV  \nonumber\\
+             &  + \int\sigma_a\;Q\;b_i\;dV
+\end{align}
+The same as Dr. Ragusa's derivation. However, in my implementation I only used the first order boundary condition for the out-going directions, as explained in the Boundary condition section. Therefore, the ``I'' and ``II'' terms doesn't cancel themselves out completely. The in-coming portion of those terms remains.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\end{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+

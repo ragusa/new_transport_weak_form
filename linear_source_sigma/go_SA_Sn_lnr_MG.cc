@@ -1890,13 +1890,20 @@ void SN<dim>::assemble_system (unsigned int group, unsigned int m)
            	 		
         	   if(Omega[m]* fe_face_values_dummy.normal_vector(i_face_dof) < 0)
         	   {
-//        	   	 if((parameters.adjoint_boundary_conditions[cell->face(face)->boundary_indicator()] == 2) && (parameters.adjoint_boundary_value[cell->face(face)->boundary_indicator()] == 1))
-        	       sn_group[group]->system_rhs(local_dof_indices[i]) = 4.0*sigma_Boltzmann*T4_vertex(local_dof_indices[i])/(4.0*M_PI);    //Dirichlet BC value
-//        	     else
-//        	     	 sn_group[group]->system_rhs(local_dof_indices[i]) = 0.0/(4.0*M_PI);    //Dirichlet BC value
-        	     for(unsigned i_dof=0; i_dof<sn_group[group]->dof_handler.n_dofs(); i_dof++)
-        	       sn_group[group]->system_matrix.set(local_dof_indices[i],i_dof,0.0); 
-        	     sn_group[group]->system_matrix.set(local_dof_indices[i],local_dof_indices[i],1.0);   //set unity on diagonal element for Dirichlet nodes
+          	   double diri_value = 4.0*sigma_Boltzmann*T4_vertex(local_dof_indices[i])/(4.0*M_PI);    //Dirichlet BC value
+               
+               for(unsigned i_dof=0; i_dof<sn_group[group]->dof_handler.n_dofs(); i_dof++)  //decouple dirichlet node from interior (column-wise)
+        	       sn_group[group]->system_rhs(i_dof) -= sn_group[group]->system_matrix.el(i_dof,local_dof_indices[i])*diri_value;
+        	   	 
+          	   for(unsigned j_dof=0; j_dof<sn_group[group]->dof_handler.n_dofs(); j_dof++)  //zero out rows
+        	       sn_group[group]->system_matrix.set(local_dof_indices[i],j_dof,0.0); 
+        	     for(unsigned i_dof=0; i_dof<sn_group[group]->dof_handler.n_dofs(); i_dof++)  //zero out colums
+        	       sn_group[group]->system_matrix.set(i_dof,local_dof_indices[i],0.0); 
+
+        	     
+        	     sn_group[group]->system_rhs(local_dof_indices[i]) = diri_value;  //T4_vertex represents the Manufacturered solution here!!!
+
+               sn_group[group]->system_matrix.set(local_dof_indices[i],local_dof_indices[i],1.0);   //set unity on diagonal element for Dirichlet nodes
         	   }
         	   	
            }

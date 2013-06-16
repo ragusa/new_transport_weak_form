@@ -19,9 +19,9 @@
 #target = go_canonical_scalar_AMG_iso_simple_MG_case1_selfmesh
 #target = go_canonical_leak_quad_error
 #target = go_EvenSn_scalar_2D_DSA_case1
-target = go_EvenSn_scalar_2D_DSA_case1_MG
+#target = go_EvenSn_scalar_2D_DSA_case1_MG
 #target = go_SA_Sn_scalar_2D_DSA_case1_MG
-#target = go_SA_Sn_pwc_MG
+target = go_SA_Sn_MG
 #target = go_EvenSn_scalar_2D_DSA_case1_MG_selfmesh
 #target = go_EvenSn_scalar_2D_DSA_case1_adjoint
 #target = go_EvenSn_scalar_2D_DSA_case1_MG_adjoint

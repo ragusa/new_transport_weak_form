@@ -1695,7 +1695,7 @@ void SN<dim>::assemble_system (unsigned int group, unsigned int m)
  const QGauss<dim-1> face_quadrature_formula(2*fe.degree +1);  
  const unsigned int n_face_q_points = face_quadrature_formula.size();
  FEFaceValues<dim> fe_face_values (fe, face_quadrature_formula, 
-        update_values | update_q_points | update_normal_vectors | update_JxW_values);
+        update_values | update_gradients | update_q_points | update_normal_vectors | update_JxW_values);
         
  //Auxiliary quadrature to get coordinates of DOFS
   Quadrature<dim> dummy_quadrature (fe.get_unit_support_points());  //dummy quadrature points to contain actually the support point on unit cell
@@ -1856,6 +1856,14 @@ void SN<dim>::assemble_system (unsigned int group, unsigned int m)
                fe_face_values.shape_value(i,q_point) * fe_face_values.shape_value(j,q_point) *
                Omega[m]*fe_face_values.normal_vector(q_point) *
                fe_face_values.JxW(q_point));
+       
+       //in-coming portion of the surface term        
+//       if(Omega[m]* fe_face_values.normal_vector(q_point) < 0)    
+//       for (unsigned int j=0; j<dofs_per_cell; j++)
+//               cell_matrix(i,j) +=  -( Omega[m] * fe_face_values.shape_grad(i, q_point) *
+//               fe_face_values.shape_value(i,q_point) *
+//               Omega[m]*fe_face_values.normal_vector(q_point) *
+//               fe_face_values.JxW(q_point));
       }
      }
      
@@ -1941,14 +1949,14 @@ void SN<dim>::assemble_system (unsigned int group, unsigned int m)
         	   if(Omega[m]* fe_face_values_dummy.normal_vector(i_face_dof) < 0)
         	   {
         	   	   double diri_value = T4_vertex(local_dof_indices[i])/(4.0*M_PI);
+        	   	   
+        	   	 for(unsigned i_dof=0; i_dof<sn_group[group]->dof_handler.n_dofs(); i_dof++)  //decouple dirichlet node from interior (column-wise)
+        	       sn_group[group]->system_rhs(i_dof) -= sn_group[group]->system_matrix.el(i_dof,local_dof_indices[i])*diri_value;
         	   	 
           	   for(unsigned j_dof=0; j_dof<sn_group[group]->dof_handler.n_dofs(); j_dof++)  //zero out rows
         	       sn_group[group]->system_matrix.set(local_dof_indices[i],j_dof,0.0); 
         	     for(unsigned i_dof=0; i_dof<sn_group[group]->dof_handler.n_dofs(); i_dof++)  //zero out colums
         	       sn_group[group]->system_matrix.set(i_dof,local_dof_indices[i],0.0); 
-        	     
-        	     for(unsigned i_dof=0; i_dof<sn_group[group]->dof_handler.n_dofs(); i_dof++)  //decouple dirichlet node from interior (column-wise)
-        	       sn_group[group]->system_rhs(i_dof) -= sn_group[group]->system_matrix.el(i_dof,local_dof_indices[i])*diri_value;
         	     
         	     
 //        	     if((parameters.adjoint_boundary_conditions[cell->face(face)->boundary_indicator()] == 2) && (parameters.adjoint_boundary_value[cell->face(face)->boundary_indicator()] == 1))

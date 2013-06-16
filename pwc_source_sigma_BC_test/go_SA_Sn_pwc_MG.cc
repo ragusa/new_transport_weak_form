@@ -1977,7 +1977,7 @@ void SN<dim>::assemble_system (unsigned int group, unsigned int m)
                Omega[m]*fe_face_values.normal_vector(q_point) *
                fe_face_values.JxW(q_point));
         
-          
+       //in-coming portion of the surface term   
 //       if(Omega[m]* fe_face_values.normal_vector(q_point) < 0)    
 //       for (unsigned int j=0; j<dofs_per_cell; j++)
 //               cell_matrix(i,j) +=  -( Omega[m] * fe_face_values.shape_grad(i, q_point) *
@@ -2039,6 +2039,8 @@ void SN<dim>::assemble_system (unsigned int group, unsigned int m)
 //   sn_group[group]->scattering_matrix[kj].vmult_add (sn_group[group]->system_rhs, phi[group]);
 //  }
 // }
+
+  
  
 
  // we take care about the hanging nodes
@@ -2104,7 +2106,9 @@ void SN<dim>::assemble_system (unsigned int group, unsigned int m)
         	     sn_group[group]->system_rhs(local_dof_indices[i]) = diri_value;  //T4_vertex represents the Manufacturered solution here!!!
 
                sn_group[group]->system_matrix.set(local_dof_indices[i],local_dof_indices[i],1.0);   //set unity on diagonal element for Dirichlet nodes
+               
         	   }
+        	   
         	   	
            }
          }
@@ -2112,7 +2116,14 @@ void SN<dim>::assemble_system (unsigned int group, unsigned int m)
      }
 
   }
- 
+  
+  
+//for(unsigned i_dof=0; i_dof<sn_group[group]->dof_handler.n_dofs(); i_dof++)  //decouple dirichlet node from interior (column-wise)
+//    for(unsigned j_dof=0; j_dof<sn_group[group]->dof_handler.n_dofs(); j_dof++)
+//        	     {
+//        	     	//if(sn_group[group]->system_matrix.el(i_dof,j_dof) != 0.0000)
+//          	     	 cout<<"M("<<i_dof<<","<<j_dof<<") = "<<sn_group[group]->system_matrix.el(i_dof,j_dof)<<endl;
+//        	     }
   
 
 // std::map<unsigned int,double> boundary_values; //  we use that if we some Dirichlet conditions (not converted yet)
