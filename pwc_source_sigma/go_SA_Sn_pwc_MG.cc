@@ -231,7 +231,7 @@ double RHS<dim>::get_Jinc (const Point<dim> &p, double value, unsigned int group
 // 	 else
  	 	 alpha = 1.0;
  	 	 
-// 	 cout<<"alpha = "<<alpha<<endl;   //debug
+// 	 std::cout<<"alpha = "<<alpha<<std::endl;   //debug
 
    double return_value = ( value/(4*M_PI) )*alpha;
    
@@ -570,7 +570,7 @@ template <int dim>
 DSA<dim>::~DSA()
 {// this is the destructor of the SN_group object
   dof_handler.clear(); 
-  cout<<"DSA desctruted"<<endl;  //debug
+  std::cout<<"DSA desctruted"<<std::endl;  //debug
 }
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 template <int dim>
@@ -1070,8 +1070,8 @@ void SN<dim>::Parameters::get_parameters (ParameterHandler &prm)
     (Utilities::split_string_list(prm.get ("Core arrangement")));
 
 for(unsigned int i = 0; i<dim; i++)
-   cout<<"n_assemblies["<<i<<"] = "<<n_assemblies[i]<<endl;  //debug
-   cout<<"core arrangement size = "<<core_arrangement.size()<<endl;
+   std::cout<<"n_assemblies["<<i<<"] = "<<n_assemblies[i]<<std::endl;  //debug
+   std::cout<<"core arrangement size = "<<core_arrangement.size()<<std::endl;
    
   AssertThrow (core_arrangement.size() ==
         (dim == 2 ?
@@ -1148,7 +1148,7 @@ SN<dim>::SN(Parameters &prm)  // constructor of the SN object
   else
   	level = n_moments/2 - (moment - n_moments/2); //latitude level index below the equator
   	
-  cout<<"Level("<<level<<"):"<<endl;
+  std::cout<<"Level("<<level<<"):"<<std::endl;
   double mu = mu_quadrature.point(n_moments - (moment + 1))[0]*2.0-1.0;  //mu = cos(\theta), polar angle cosine
   Tensor<1, dim> temp;  //temporary Tensor to store angular qudrature point
   if(dim == 3)
@@ -1161,8 +1161,8 @@ SN<dim>::SN(Parameters &prm)  // constructor of the SN object
    temp[1] = sqrt(1.0 - mu*mu)*sin(w);  //y compoment of the direction
    Omega.push_back(temp);
    wt.push_back(2.0*mu_quadrature.weight(n_moments - (moment + 1))*2.0*M_PI/(4.0*level));  //polar weights sum to 2, total weights sum to 4*pi 
-   cout<<temp[0]<<" "<<temp[1]<<" "<<temp[2]<<endl;
-   cout<<"wt = "<<2.0*mu_quadrature.weight(n_moments - (moment + 1))*2.0*M_PI/(4.0*level)<<endl;
+   std::cout<<temp[0]<<" "<<temp[1]<<" "<<temp[2]<<std::endl;
+   std::cout<<"wt = "<<2.0*mu_quadrature.weight(n_moments - (moment + 1))*2.0*M_PI/(4.0*level)<<std::endl;
   }
  }
 
@@ -1813,8 +1813,8 @@ void SN<dim>::read_SPn_data ()
 //           double Pnm = Legendre::Pn(n, mu);
 //           if (J[i_dof].norm()==0.0)  //detect whether J has a norm of zero
 //           {
-//           	 cout<<"norm(J) is zero!!!   mu="<<mu<<endl;
-//           	 cout<<"Pn(mu) = "<<Pnm<<endl;
+//           	 std::cout<<"norm(J) is zero!!!   mu="<<mu<<std::endl;
+//           	 std::cout<<"Pn(mu) = "<<Pnm<<std::endl;
 //           }
 //           psi_plus_recon[group][m](i_dof) += (2.0*n+1.0)/(4.0*M_PI)*phi_even_spn[group][n](i_dof)*Pnm;
 //           
@@ -1827,17 +1827,17 @@ void SN<dim>::read_SPn_data ()
 //     {
 //       for(unsigned int component=0; component<2*dim; component++)
 //         J_out<<J_vector[i][component]<<" ";
-//       J_out<<endl;
+//       J_out<<std::endl;
 //     }
 //     
-//     //cout<<grad_vector[i][2]*grad_vector[i][2]+grad_vector[i][3]*grad_vector[i][3]<<" ";
+//     //std::cout<<grad_vector[i][2]*grad_vector[i][2]+grad_vector[i][3]*grad_vector[i][3]<<" ";
 //  
 //     for(unsigned int i=0; i<grad_vector.size(); i++)
 //     {
 //       for(unsigned int component=0; component<2*dim; component++)
 //         grad_out<<grad_vector[i][component]<<" ";
-//       grad_out<<endl;
-//       //cout<<grad_vector[i][2]*grad_vector[i][2]+grad_vector[i][3]*grad_vector[i][3]<<" ";
+//       grad_out<<std::endl;
+//       //std::cout<<grad_vector[i][2]*grad_vector[i][2]+grad_vector[i][3]*grad_vector[i][3]<<" ";
 //     }
 //      
 //    grad_out.close();
@@ -2214,7 +2214,7 @@ void SN<dim>::compute_response(unsigned int group)
               
             if(Omega[angle]*fe_face_values.normal_vector(q_point) > 0.0)  //check if current Omega is out-going direction
           	{
-              leakage +=  abs( Omega[angle] * fe_face_values.normal_vector(q_point) ) *
+              leakage +=  std::abs( Omega[angle] * fe_face_values.normal_vector(q_point) ) *
                         (face_psi_values[q_point]  // \psi(\Omega) += 2*psi+*(\Omega), \Omega*n >0  //check J_{spn} ?= J_{recon}
                              /*- face_psi_values_recon[q_point]*/)*  // \psi(\Omega) += 2*psi+*(\Omega), \Omega*n >0
                        (dim==2?2.0:1.0)*wt[angle]*                       //integrate over half the sphere                                                                                                  
@@ -2222,7 +2222,7 @@ void SN<dim>::compute_response(unsigned int group)
             }
             else
             {             
-              source +=  abs( Omega[angle] * fe_face_values.normal_vector(q_point) ) *
+              source +=  std::abs( Omega[angle] * fe_face_values.normal_vector(q_point) ) *
                        (face_psi_values[q_point])*  // \psi(\Omega) += - f(-\Omega), \Omega*n >0
                        (dim==2?2.0:1.0)*wt[angle]*                       //integrate over half the sphere                                                                                                 
                        fe_face_values.JxW(q_point);        //integrate over cell volume 
@@ -2235,9 +2235,9 @@ void SN<dim>::compute_response(unsigned int group)
 
 	}
 	response[group] = leakage;
-  cout<<"Leakage of Interest: "<<leakage<<endl;
-  cout<<"Source  of Interest: "<<source<<endl;
-  cout<<"Half-Range-Current : "<<response[group]<<endl;
+  std::cout<<"Leakage of Interest: "<<leakage<<std::endl;
+  std::cout<<"Source  of Interest: "<<source<<std::endl;
+  std::cout<<"Half-Range-Current : "<<response[group]<<std::endl;
 							
 }
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -2323,14 +2323,14 @@ void SN<dim>::check_conservation(unsigned int group)
      		   
      		    if(Omega[angle]*fe_face_values.normal_vector(q_point) > 0.0)  //check if current Omega is out-going direction
           	{     
-              sink +=  abs( Omega[angle] * fe_face_values.normal_vector(q_point)  ) *
+              sink +=  std::abs( Omega[angle] * fe_face_values.normal_vector(q_point)  ) *
                      (face_psi_values[q_point]) *  // \psi(\Omega) = 2*psi+*(\Omega) - f(-\Omega), \Omega*n >0
                      (dim==2?2.0:1.0)*wt[angle]*                       //integrate over all directions                                                                                                  
                      fe_face_values.JxW(q_point);        //integrate over cell volume
             }
             else             
             {         
-              source += abs( Omega[angle] * fe_face_values.normal_vector(q_point) ) *
+              source += std::abs( Omega[angle] * fe_face_values.normal_vector(q_point) ) *
                       (face_psi_values[q_point]) *    // \psi(\Omega) = f(\Omega), \Omega*n <0
                       (dim==2?2.0:1.0)*wt[angle]*                       //integrate over all directions                                                                                                  
                       fe_face_values.JxW(q_point);        //integrate over cell volume
@@ -2342,10 +2342,10 @@ void SN<dim>::check_conservation(unsigned int group)
 		
 	}
 	
-	cout<<"sink = "<<sink<<endl;
-		cout<<"source = "<<source<<endl;
+	std::cout<<"sink = "<<sink<<std::endl;
+		std::cout<<"source = "<<source<<std::endl;
 	conservation = (source-sink)/source;
-  cout<<"Partical Conservation : "<<conservation<<endl;
+  std::cout<<"Partical Conservation : "<<conservation<<std::endl;
 	
 }
 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -2415,7 +2415,7 @@ void SN<dim>::output (int cycle) const
 //         {
 //           for(unsigned int component=0; component<dim+1; component++) 
 //   				   dPhi_out<<dPhi_vector[i][component]<<" ";
-//   			   dPhi_out<<endl;
+//   			   dPhi_out<<std::endl;
 //   			 }
 //   			
 //   			dPhi_out.close();
@@ -2437,7 +2437,7 @@ void SN<dim>::output (int cycle) const
 //    unsigned int ndof_odd = phi_odd_spn[group][1].size();
 //    unsigned int n_moments = phi_even_spn[group].size();
 //    
-//    f_out<<"#Even Moments "<<ndof_even<<" "<<n_moments<<endl;
+//    f_out<<"#Even Moments "<<ndof_even<<" "<<n_moments<<std::endl;
 //    for(unsigned int idof=0; idof<ndof_even; idof++)
 //    {
 //     for(unsigned int moment=0; moment<n_moments; moment=moment+2)
@@ -2450,14 +2450,14 @@ void SN<dim>::output (int cycle) const
 //   		  f_out<<dof_neighbour_dof[group][idof][i_nb]<<" ";
 //   		
 //     f_out<<"#";
-//     f_out<<endl;
+//     f_out<<std::endl;
 //    }
-//    f_out<<"#Odd Moments "<<ndof_odd<<" "<<n_moments<<endl;
+//    f_out<<"#Odd Moments "<<ndof_odd<<" "<<n_moments<<std::endl;
 //    for(unsigned int idof=0; idof<ndof_odd; idof++)
 //    {
 //     for(unsigned int moment=1; moment<n_moments; moment=moment+2)
 //       f_out<<phi_odd_spn[group][moment](idof)<<" ";
-//     f_out<<endl;
+//     f_out<<std::endl;
 //    }
 //    f_out.close();
   }
@@ -2504,7 +2504,7 @@ void SN<dim>::run ()
   for(unsigned int j=0; not_converged && j<1 ;j++) // we solve the direct problem. we need to iterate over all the moments until we converge
   {
     not_converged = false;  //reset the not_conerged flag to FALSE for all groups
-  	cout<<"Begin Source Iteration, j = "<<j<<endl;   
+  	std::cout<<"Begin Source Iteration, j = "<<j<<std::endl;   
   	for(unsigned int group = 0; group<n_groups; group++)   //loop through all groups
    		if(conv[group] > conv_tol)
  		  {
@@ -2545,7 +2545,7 @@ void SN<dim>::run ()
           conv[group]=10;
     
         conv[group] = conv[group]/den;
-        cout<<"conv("<<group<<") = "<<conv[group]<<endl;  //debug
+        std::cout<<"conv("<<group<<") = "<<conv[group]<<std::endl;  //debug
      
         phi_old[group] = phi[group];
         

@@ -1,5 +1,5 @@
-./go_SA_Sn_pwc_MG.o: \
-		go_SA_Sn_pwc_MG.cc\
+./go_SA_Sn_lnr_ibp_sin_pos_rebal4.o: \
+		go_SA_Sn_lnr_ibp_sin_pos_rebal4.cc\
 		/home/yunhuang/deal.II/contrib/boost-1.46.1/include/boost/algorithm/string/compare.hpp\
 		/home/yunhuang/deal.II/contrib/boost-1.46.1/include/boost/algorithm/string/concept.hpp\
 		/home/yunhuang/deal.II/contrib/boost-1.46.1/include/boost/algorithm/string/config.hpp\
@@ -851,6 +851,7 @@
 		/home/yunhuang/deal.II/include/deal.II/fe/mapping_q.h\
 		/home/yunhuang/deal.II/include/deal.II/fe/mapping_q1.h\
 		/home/yunhuang/deal.II/include/deal.II/grid/grid_generator.h\
+		/home/yunhuang/deal.II/include/deal.II/grid/grid_in.h\
 		/home/yunhuang/deal.II/include/deal.II/grid/grid_out.h\
 		/home/yunhuang/deal.II/include/deal.II/grid/grid_refinement.h\
 		/home/yunhuang/deal.II/include/deal.II/grid/grid_tools.h\
@@ -904,8 +905,8 @@
 		/home/yunhuang/deal.II/include/deal.II/numerics/matrices.h\
 		/home/yunhuang/deal.II/include/deal.II/numerics/solution_transfer.h\
 		/home/yunhuang/deal.II/include/deal.II/numerics/vectors.h
-./go_SA_Sn_pwc_MG.g.o: \
-		go_SA_Sn_pwc_MG.cc\
+./go_SA_Sn_lnr_ibp_sin_pos_rebal4.g.o: \
+		go_SA_Sn_lnr_ibp_sin_pos_rebal4.cc\
 		/home/yunhuang/deal.II/contrib/boost-1.46.1/include/boost/algorithm/string/compare.hpp\
 		/home/yunhuang/deal.II/contrib/boost-1.46.1/include/boost/algorithm/string/concept.hpp\
 		/home/yunhuang/deal.II/contrib/boost-1.46.1/include/boost/algorithm/string/config.hpp\
@@ -1757,6 +1758,7 @@
 		/home/yunhuang/deal.II/include/deal.II/fe/mapping_q.h\
 		/home/yunhuang/deal.II/include/deal.II/fe/mapping_q1.h\
 		/home/yunhuang/deal.II/include/deal.II/grid/grid_generator.h\
+		/home/yunhuang/deal.II/include/deal.II/grid/grid_in.h\
 		/home/yunhuang/deal.II/include/deal.II/grid/grid_out.h\
 		/home/yunhuang/deal.II/include/deal.II/grid/grid_refinement.h\
 		/home/yunhuang/deal.II/include/deal.II/grid/grid_tools.h\
